@@ -19,14 +19,14 @@
 - Result ID: 10-char URL-safe random.
 - Client downscales images to ≤1600 px longest edge, JPEG q=0.85, before upload.
 - Gemini model is read from env `GEMINI_MODEL`, default `gemini-2.5-flash`.
-- Backend package manager: `uv` (commit `api/uv.lock`). Frontend: `bun` (commit `web/bun.lock`; never add npm/pnpm lockfiles).
+- Backend package manager: `uv` (commit `server/uv.lock`). Frontend: `bun` (commit `client/bun.lock`; never add npm/pnpm lockfiles).
 - Auth is optional and frontend-only: Firebase Auth (Google provider) + Firestore `users/{uid}/results/{id}`. FastAPI never sees a user.
-- Python: run all commands from `api/`. TS: run all commands from `web/`.
+- Python: run all commands from `server/`. TS: run all commands from `client/`.
 
 ## File Structure
 
 ```
-api/
+server/
   pyproject.toml
   Dockerfile
   app/__init__.py
@@ -43,7 +43,7 @@ api/
   tests/test_main.py
   tests/test_live.py       live Gemini recall test, skipped without key
   tests/fixtures/          5 real school docs + *.expected.json
-web/
+client/
   app/[locale]/page.tsx          upload
   app/[locale]/r/[id]/page.tsx   results
   app/[locale]/layout.tsx
@@ -67,7 +67,7 @@ web/
 ### Task 1: API scaffold + models + urgency
 
 **Files:**
-- Create: `api/pyproject.toml`, `api/app/__init__.py`, `api/app/models.py`, `api/tests/__init__.py`, `api/tests/test_models.py`
+- Create: `server/pyproject.toml`, `server/app/__init__.py`, `server/app/models.py`, `server/tests/__init__.py`, `server/tests/test_models.py`
 
 **Interfaces:**
 - Produces: `ActionItem`, `PageSummary`, `ReplyDraft`, `DecodeResult`, `Lang = Literal["es","vi","zh"]`, `compute_urgency(due: date | None, today: date) -> Urgency`, `new_id() -> str`.
@@ -75,7 +75,7 @@ web/
 - [ ] **Step 1: Create project**
 
 ```bash
-mkdir -p api/app api/tests && cd api
+mkdir -p server/app server/tests && cd server
 cat > pyproject.toml <<'EOF'
 [project]
 name = "paper-bridge-api"
@@ -103,7 +103,7 @@ uv sync
 
 - [ ] **Step 2: Write failing test**
 
-`api/tests/test_models.py`:
+`server/tests/test_models.py`:
 ```python
 from datetime import date
 from app.models import compute_urgency, new_id
@@ -133,7 +133,7 @@ Run: `uv run pytest tests/test_models.py -v` → FAIL `ModuleNotFoundError: app.
 
 - [ ] **Step 4: Implement**
 
-`api/app/models.py`:
+`server/app/models.py`:
 ```python
 import secrets
 from datetime import date, datetime, time
@@ -204,7 +204,7 @@ Run: `uv run pytest tests/test_models.py -v` → 4 passed
 - [ ] **Step 6: Commit**
 
 ```bash
-git add api/pyproject.toml api/uv.lock api/app api/tests
+git add server/pyproject.toml server/uv.lock server/app server/tests
 git commit -m "feat(api): scaffold, models, urgency"
 ```
 
@@ -213,7 +213,7 @@ git commit -m "feat(api): scaffold, models, urgency"
 ### Task 2: `.ics` builder
 
 **Files:**
-- Create: `api/app/ics.py`, `api/tests/conftest.py`, `api/tests/test_ics.py`
+- Create: `server/app/ics.py`, `server/tests/conftest.py`, `server/tests/test_ics.py`
 
 **Interfaces:**
 - Consumes: `DecodeResult`, `ActionItem` from Task 1.
@@ -221,7 +221,7 @@ git commit -m "feat(api): scaffold, models, urgency"
 
 - [ ] **Step 1: Shared fixture**
 
-`api/tests/conftest.py`:
+`server/tests/conftest.py`:
 ```python
 from datetime import date, datetime, time
 import pytest
@@ -253,7 +253,7 @@ def sample_result() -> DecodeResult:
 
 - [ ] **Step 2: Failing test**
 
-`api/tests/test_ics.py`:
+`server/tests/test_ics.py`:
 ```python
 from icalendar import Calendar
 from app.ics import build_ics
@@ -281,7 +281,7 @@ Run: `uv run pytest tests/test_ics.py -v` → FAIL
 
 - [ ] **Step 4: Implement**
 
-`api/app/ics.py`:
+`server/app/ics.py`:
 ```python
 from datetime import datetime, timedelta
 from icalendar import Alarm, Calendar, Event
@@ -328,7 +328,7 @@ Run: `uv run pytest tests/test_ics.py -v` → 1 passed
 - [ ] **Step 6: Commit**
 
 ```bash
-git add api/app/ics.py api/tests/conftest.py api/tests/test_ics.py
+git add server/app/ics.py server/tests/conftest.py server/tests/test_ics.py
 git commit -m "feat(api): ics builder"
 ```
 
@@ -337,14 +337,14 @@ git commit -m "feat(api): ics builder"
 ### Task 3: Cloudflare KV store
 
 **Files:**
-- Create: `api/app/store.py`, `api/tests/test_store.py`
+- Create: `server/app/store.py`, `server/tests/test_store.py`
 
 **Interfaces:**
 - Produces: `async put(result: DecodeResult) -> None`, `async get(id: str) -> DecodeResult | None`. Reads env `CF_ACCOUNT_ID`, `CF_KV_NAMESPACE_ID`, `CF_API_TOKEN`.
 
 - [ ] **Step 1: Failing test**
 
-`api/tests/test_store.py`:
+`server/tests/test_store.py`:
 ```python
 import httpx, respx, pytest
 from app import store
@@ -385,7 +385,7 @@ Run: `uv run pytest tests/test_store.py -v` → FAIL
 
 - [ ] **Step 3: Implement**
 
-`api/app/store.py`:
+`server/app/store.py`:
 ```python
 import os
 import httpx
@@ -426,7 +426,7 @@ Run: `uv run pytest tests/test_store.py -v` → 2 passed
 - [ ] **Step 5: Commit**
 
 ```bash
-git add api/app/store.py api/tests/test_store.py
+git add server/app/store.py server/tests/test_store.py
 git commit -m "feat(api): cloudflare kv store"
 ```
 
@@ -435,7 +435,7 @@ git commit -m "feat(api): cloudflare kv store"
 ### Task 4: Gemini decoder
 
 **Files:**
-- Create: `api/app/decoder.py`, `api/tests/test_decoder.py`
+- Create: `server/app/decoder.py`, `server/tests/test_decoder.py`
 
 **Interfaces:**
 - Consumes: models from Task 1.
@@ -443,7 +443,7 @@ git commit -m "feat(api): cloudflare kv store"
 
 - [ ] **Step 1: Failing tests with a fake client**
 
-`api/tests/test_decoder.py`:
+`server/tests/test_decoder.py`:
 ```python
 import json
 from datetime import date
@@ -516,7 +516,7 @@ Run: `uv run pytest tests/test_decoder.py -v` → FAIL
 
 - [ ] **Step 3: Implement**
 
-`api/app/decoder.py`:
+`server/app/decoder.py`:
 ```python
 import asyncio
 import os
@@ -652,7 +652,7 @@ Note for `test_single_page_no_merge`: one page, `needs_reply=False` → no merge
 - [ ] **Step 5: Commit**
 
 ```bash
-git add api/app/decoder.py api/tests/test_decoder.py
+git add server/app/decoder.py server/tests/test_decoder.py
 git commit -m "feat(api): gemini decoder with merge + reply drafts"
 ```
 
@@ -661,7 +661,7 @@ git commit -m "feat(api): gemini decoder with merge + reply drafts"
 ### Task 5: FastAPI routes
 
 **Files:**
-- Create: `api/app/main.py`, `api/tests/test_main.py`
+- Create: `server/app/main.py`, `server/tests/test_main.py`
 
 **Interfaces:**
 - Consumes: `decoder.decode`, `store.put/get`, `ics.build_ics`.
@@ -669,7 +669,7 @@ git commit -m "feat(api): gemini decoder with merge + reply drafts"
 
 - [ ] **Step 1: Failing tests**
 
-`api/tests/test_main.py`:
+`server/tests/test_main.py`:
 ```python
 import pytest
 from fastapi.testclient import TestClient
@@ -742,7 +742,7 @@ Run: `uv run pytest tests/test_main.py -v` → FAIL
 
 - [ ] **Step 3: Implement**
 
-`api/app/main.py`:
+`server/app/main.py`:
 ```python
 import logging
 import os
@@ -817,7 +817,7 @@ Run: `uv run pytest -v` → all passed (models 4, ics 1, store 2, decoder 4, mai
 - [ ] **Step 5: Commit**
 
 ```bash
-git add api/app/main.py api/tests/test_main.py
+git add server/app/main.py server/tests/test_main.py
 git commit -m "feat(api): decode, result, ics routes"
 ```
 
@@ -826,11 +826,11 @@ git commit -m "feat(api): decode, result, ics routes"
 ### Task 6: Dockerfile + Railway
 
 **Files:**
-- Create: `api/Dockerfile`, `api/.dockerignore`, `api/.env.example`
+- Create: `server/Dockerfile`, `server/.dockerignore`, `server/.env.example`
 
 - [ ] **Step 1: Files**
 
-`api/Dockerfile`:
+`server/Dockerfile`:
 ```dockerfile
 FROM python:3.12-slim
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/uv
@@ -842,7 +842,7 @@ ENV PATH="/app/.venv/bin:$PATH"
 CMD uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}
 ```
 
-`api/.dockerignore`:
+`server/.dockerignore`:
 ```
 .venv
 tests
@@ -850,7 +850,7 @@ __pycache__
 .env
 ```
 
-`api/.env.example`:
+`server/.env.example`:
 ```
 GEMINI_API_KEY=
 GEMINI_MODEL=gemini-2.5-flash
@@ -863,20 +863,20 @@ ALLOWED_ORIGIN=http://localhost:3000
 - [ ] **Step 2: Verify build + boot**
 
 ```bash
-cd api && docker build -t pb-api . && docker run --rm -p 8000:8000 -e PORT=8000 pb-api &
+cd server && docker build -t pb-api . && docker run --rm -p 8000:8000 -e PORT=8000 pb-api &
 sleep 3 && curl -s localhost:8000/health   # {"ok":true}
 ```
 
 - [ ] **Step 3: Deploy**
 
-Railway dashboard → New project → Deploy from GitHub → root dir `api` → set the 6 env vars. `ALLOWED_ORIGIN` = the Vercel URL from Task 7 (update after that deploy). Confirm `https://<railway>.up.railway.app/health`.
+Railway dashboard → New project → Deploy from GitHub → root dir `server` → set the 6 env vars. `ALLOWED_ORIGIN` = the Vercel URL from Task 7 (update after that deploy). Confirm `https://<railway>.up.railway.app/health`.
 
 Cloudflare: Dashboard → Workers & Pages → KV → create namespace `paperbridge-results`, copy its ID. API token: Create Token → template "Edit Cloudflare Workers" (includes KV write).
 
 - [ ] **Step 4: Commit**
 
 ```bash
-git add api/Dockerfile api/.dockerignore api/.env.example
+git add server/Dockerfile server/.dockerignore server/.env.example
 git commit -m "chore(api): dockerfile + env example"
 ```
 
@@ -885,7 +885,7 @@ git commit -m "chore(api): dockerfile + env example"
 ### Task 7: Web scaffold + i18n + API client
 
 **Files:**
-- Create: `web/` (Next.js), `web/lib/api.ts`, `web/lib/image.ts`, `web/i18n/routing.ts`, `web/i18n/request.ts`, `web/proxy.ts`, `web/messages/{en,es,vi,zh}.json`, `web/app/[locale]/layout.tsx`, `web/.env.example`
+- Create: `client/` (Next.js), `client/lib/api.ts`, `client/lib/image.ts`, `client/i18n/routing.ts`, `client/i18n/request.ts`, `client/proxy.ts`, `client/messages/{en,es,vi,zh}.json`, `client/app/[locale]/layout.tsx`, `client/.env.example`
 
 **Interfaces:**
 - Produces: TS types mirroring Task 1 models; `decode(files, lang)`, `getResult(id)`, `icsUrl(id)`; `downscale(file) -> Promise<File>`; locales `["en","es","vi","zh"]` (`en` for dev only; UI picker shows the three).
@@ -893,20 +893,20 @@ git commit -m "chore(api): dockerfile + env example"
 - [ ] **Step 1: Scaffold**
 
 ```bash
-bun create next-app@latest web --ts --tailwind --eslint --app --src-dir=false --import-alias "@/*" --use-bun
-cd web && bunx --bun shadcn@latest init -d && bunx --bun shadcn@latest add button card badge drawer sheet
+bun create next-app@latest client --ts --tailwind --eslint --app --src-dir=false --import-alias "@/*" --use-bun
+cd client && bunx --bun shadcn@latest init -d && bunx --bun shadcn@latest add button card badge drawer sheet
 bun add next-intl
 ```
 
 - [ ] **Step 2: i18n plumbing**
 
-`web/i18n/routing.ts`:
+`client/i18n/routing.ts`:
 ```ts
 import { defineRouting } from "next-intl/routing";
 export const routing = defineRouting({ locales: ["en", "es", "vi", "zh"], defaultLocale: "en" });
 ```
 
-`web/i18n/request.ts`:
+`client/i18n/request.ts`:
 ```ts
 import { getRequestConfig } from "next-intl/server";
 import { routing } from "./routing";
@@ -917,7 +917,7 @@ export default getRequestConfig(async ({ requestLocale }) => {
 });
 ```
 
-`web/proxy.ts` (Next 16 renamed `middleware.ts` → `proxy.ts`; next-intl's import name is unchanged):
+`client/proxy.ts` (Next 16 renamed `middleware.ts` → `proxy.ts`; next-intl's import name is unchanged):
 ```ts
 import createMiddleware from "next-intl/middleware";
 import { routing } from "./i18n/routing";
@@ -925,14 +925,14 @@ export default createMiddleware(routing);
 export const config = { matcher: "/((?!api|_next|_vercel|.*\\..*).*)" };
 ```
 
-`web/next.config.ts`:
+`client/next.config.ts`:
 ```ts
 import createNextIntlPlugin from "next-intl/plugin";
 const withNextIntl = createNextIntlPlugin("./i18n/request.ts");
 export default withNextIntl({});
 ```
 
-`web/app/[locale]/layout.tsx`:
+`client/app/[locale]/layout.tsx`:
 ```tsx
 import { NextIntlClientProvider } from "next-intl";
 import { getMessages } from "next-intl/server";
@@ -951,11 +951,11 @@ export default async function Layout({ children, params }: { children: React.Rea
 }
 ```
 
-Delete `web/app/page.tsx` and `web/app/layout.tsx` (moved under `[locale]`).
+Delete `client/app/page.tsx` and `client/app/layout.tsx` (moved under `[locale]`).
 
 - [ ] **Step 3: Messages**
 
-`web/messages/en.json` (then translate the same keys into `es.json`, `vi.json`, `zh.json` — use the Vietnamese strings from the Pencil design for `vi`):
+`client/messages/en.json` (then translate the same keys into `es.json`, `vi.json`, `zh.json` — use the Vietnamese strings from the Pencil design for `vi`):
 ```json
 {
   "upload": {
@@ -1004,7 +1004,7 @@ Delete `web/app/page.tsx` and `web/app/layout.tsx` (moved under `[locale]`).
 
 - [ ] **Step 4: API client + types**
 
-`web/lib/api.ts`:
+`client/lib/api.ts`:
 ```ts
 export type Lang = "es" | "vi" | "zh";
 export type Urgency = "overdue" | "this_week" | "later" | "none";
@@ -1040,7 +1040,7 @@ export async function getResult(id: string): Promise<DecodeResult | null> {
 export const icsUrl = (id: string) => `${API}/r/${id}/calendar.ics`;
 ```
 
-`web/lib/image.ts`:
+`client/lib/image.ts`:
 ```ts
 // dev-note: canvas downscale keeps uploads ~300KB/page; PDFs pass through untouched
 export async function downscale(file: File, max = 1600): Promise<File> {
@@ -1056,7 +1056,7 @@ export async function downscale(file: File, max = 1600): Promise<File> {
 }
 ```
 
-`web/.env.example`: `NEXT_PUBLIC_API_URL=http://localhost:8000`
+`client/.env.example`: `NEXT_PUBLIC_API_URL=http://localhost:8000`
 
 - [ ] **Step 5: Verify**
 
@@ -1074,7 +1074,7 @@ git commit -m "feat(web): scaffold, i18n, api client"
 ### Task 8: Upload page
 
 **Files:**
-- Create: `web/components/upload-form.tsx`; Replace: `web/app/[locale]/page.tsx`
+- Create: `client/components/upload-form.tsx`; Replace: `client/app/[locale]/page.tsx`
 
 **Interfaces:**
 - Consumes: `decode`, `downscale`, `Lang`, messages `upload.*`.
@@ -1082,7 +1082,7 @@ git commit -m "feat(web): scaffold, i18n, api client"
 
 - [ ] **Step 1: Page**
 
-`web/app/[locale]/page.tsx`:
+`client/app/[locale]/page.tsx`:
 ```tsx
 import UploadForm from "@/components/upload-form";
 export default function Page() { return <UploadForm />; }
@@ -1090,7 +1090,7 @@ export default function Page() { return <UploadForm />; }
 
 - [ ] **Step 2: Component**
 
-`web/components/upload-form.tsx`:
+`client/components/upload-form.tsx`:
 ```tsx
 "use client";
 import { useState } from "react";
@@ -1201,12 +1201,12 @@ export default function UploadForm() {
 
 - [ ] **Step 3: Manual verify**
 
-Run API: `cd api && uv run uvicorn app.main:app --reload` (with real `.env`). Run web: `cd web && bun dev`. Open `http://localhost:3000/vi`, pick 2 photos, click Decode → lands on `/vi/r/<id>` (404 page for now — that's Task 9). Check Network tab: request bodies are JPEG ≤1600px.
+Run API: `cd server && uv run uvicorn app.main:app --reload` (with real `.env`). Run web: `cd client && bun dev`. Open `http://localhost:3000/vi`, pick 2 photos, click Decode → lands on `/vi/r/<id>` (404 page for now — that's Task 9). Check Network tab: request bodies are JPEG ≤1600px.
 
 - [ ] **Step 4: Commit**
 
 ```bash
-git add web/app web/components/upload-form.tsx
+git add client/app client/components/upload-form.tsx
 git commit -m "feat(web): upload flow"
 ```
 
@@ -1215,14 +1215,14 @@ git commit -m "feat(web): upload flow"
 ### Task 9: Results page + reply drawer
 
 **Files:**
-- Create: `web/app/[locale]/r/[id]/page.tsx`, `web/components/results-view.tsx`, `web/components/item-card.tsx`, `web/components/reply-drawer.tsx`
+- Create: `client/app/[locale]/r/[id]/page.tsx`, `client/components/results-view.tsx`, `client/components/item-card.tsx`, `client/components/reply-drawer.tsx`
 
 **Interfaces:**
 - Consumes: `getResult`, `icsUrl`, `DecodeResult`, `ActionItem`, messages `results.*`.
 
 - [ ] **Step 1: Server page**
 
-`web/app/[locale]/r/[id]/page.tsx`:
+`client/app/[locale]/r/[id]/page.tsx`:
 ```tsx
 import { getResult } from "@/lib/api";
 import ResultsView from "@/components/results-view";
@@ -1240,7 +1240,7 @@ export default async function Page({ params }: { params: Promise<{ id: string; l
 
 - [ ] **Step 2: Results view**
 
-`web/components/results-view.tsx`:
+`client/components/results-view.tsx`:
 ```tsx
 "use client";
 import { useEffect, useState } from "react";
@@ -1327,7 +1327,7 @@ export default function ResultsView({ id, initial }: { id: string | null; initia
 
 - [ ] **Step 3: Item card**
 
-`web/components/item-card.tsx`:
+`client/components/item-card.tsx`:
 ```tsx
 "use client";
 import { useState } from "react";
@@ -1381,7 +1381,7 @@ export default function ItemCard({ item, onReply }: { item: ActionItem; onReply:
 
 - [ ] **Step 4: Reply drawer**
 
-`web/components/reply-drawer.tsx`:
+`client/components/reply-drawer.tsx`:
 ```tsx
 "use client";
 import { useState } from "react";
@@ -1415,7 +1415,7 @@ export default function ReplyDrawer({ item, draft, onClose }: { item: ActionItem
 }
 ```
 
-Add to `web/app/globals.css` (after Tailwind import): `.font-serif { font-family: "Fraunces", Georgia, serif; }` and in `[locale]/layout.tsx` add `<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&display=swap" rel="stylesheet" />` inside `<head>`.
+Add to `client/app/globals.css` (after Tailwind import): `.font-serif { font-family: "Fraunces", Georgia, serif; }` and in `[locale]/layout.tsx` add `<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&display=swap" rel="stylesheet" />` inside `<head>`.
 
 - [ ] **Step 5: Verify**
 
@@ -1424,7 +1424,7 @@ Add to `web/app/globals.css` (after Tailwind import): `.font-serif { font-family
 - [ ] **Step 6: Commit**
 
 ```bash
-git add web/app web/components
+git add client/app client/components
 git commit -m "feat(web): results page, item cards, reply drawer"
 ```
 
@@ -1433,7 +1433,7 @@ git commit -m "feat(web): results page, item cards, reply drawer"
 ### Task 10: Fixtures, live recall test, deploy, README
 
 **Files:**
-- Create: `api/tests/fixtures/*.{jpg,pdf}` (5 files), `api/tests/fixtures/*.expected.json`, `api/tests/test_live.py`; Modify: `README.md`
+- Create: `server/tests/fixtures/*.{jpg,pdf}` (5 files), `server/tests/fixtures/*.expected.json`, `server/tests/test_live.py`; Modify: `README.md`
 
 - [ ] **Step 1: Collect fixtures**
 
@@ -1445,7 +1445,7 @@ Only include tuples a human is sure about. Omit a key from a tuple to mean "don'
 
 - [ ] **Step 2: Live test**
 
-`api/tests/test_live.py`:
+`server/tests/test_live.py`:
 ```python
 import json, os
 from datetime import date
@@ -1473,18 +1473,18 @@ Run: `uv run pytest tests/test_live.py -v` → all 5 pass. If one fails, fix the
 - [ ] **Step 3: Deploy web**
 
 ```bash
-cd web && vercel --prod   # set NEXT_PUBLIC_API_URL to the Railway URL in Vercel env first
+cd client && vercel --prod   # set NEXT_PUBLIC_API_URL to the Railway URL in Vercel env first
 ```
 Then set `ALLOWED_ORIGIN` on Railway to the Vercel URL and redeploy the API.
 
 - [ ] **Step 4: README**
 
-Replace `README.md` with: one-paragraph pitch, the demo script from the spec, local dev (`api`: `cp .env.example .env && uv sync && uv run uvicorn app.main:app --reload`; `web`: `cp .env.example .env.local && bun install && bun dev`), and env var table.
+Replace `README.md` with: one-paragraph pitch, the demo script from the spec, local dev (`server`: `cp .env.example .env && uv sync && uv run uvicorn app.main:app --reload`; `client`: `cp .env.example .env.local && bun install && bun dev`), and env var table.
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add api/tests/fixtures api/tests/test_live.py README.md
+git add server/tests/fixtures server/tests/test_live.py README.md
 git commit -m "test: live recall fixtures; docs: readme"
 ```
 
@@ -1493,8 +1493,8 @@ git commit -m "test: live recall fixtures; docs: readme"
 ### Task 11: Google sign-in + history (Firebase)
 
 **Files:**
-- Create: `web/lib/firebase.ts`, `web/components/auth-button.tsx`, `web/app/[locale]/signin/page.tsx`, `web/app/[locale]/history/page.tsx`, `web/firestore.rules`
-- Modify: `web/components/upload-form.tsx` (call `saveToHistory` after decode), `web/components/results-view.tsx` (mount `<AuthButton/>` in top bar), `web/messages/*.json` (add `auth.*` keys), `web/.env.example`
+- Create: `client/lib/firebase.ts`, `client/components/auth-button.tsx`, `client/app/[locale]/signin/page.tsx`, `client/app/[locale]/history/page.tsx`, `client/firestore.rules`
+- Modify: `client/components/upload-form.tsx` (call `saveToHistory` after decode), `client/components/results-view.tsx` (mount `<AuthButton/>` in top bar), `client/messages/*.json` (add `auth.*` keys), `client/.env.example`
 
 **Interfaces:**
 - Consumes: `DecodeResult` from `lib/api.ts`.
@@ -1504,7 +1504,7 @@ git commit -m "test: live recall fixtures; docs: readme"
 
 console.firebase.google.com → Add project `paper-bridge` → Build → Authentication → Sign-in method → enable **Google** → Build → Firestore → create database (production mode). Project settings → Your apps → Web → copy config. Add the Vercel domain under Authentication → Settings → Authorized domains.
 
-`web/.env.example` append:
+`client/.env.example` append:
 ```
 NEXT_PUBLIC_FIREBASE_API_KEY=
 NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=
@@ -1514,7 +1514,7 @@ NEXT_PUBLIC_FIREBASE_APP_ID=
 
 - [ ] **Step 2: Rules**
 
-`web/firestore.rules` (paste into console → Firestore → Rules → Publish):
+`client/firestore.rules` (paste into console → Firestore → Rules → Publish):
 ```
 rules_version = '2';
 service cloud.firestore {
@@ -1532,7 +1532,7 @@ service cloud.firestore {
 bun add firebase
 ```
 
-`web/lib/firebase.ts`:
+`client/lib/firebase.ts`:
 ```ts
 import { getApps, initializeApp } from "firebase/app";
 import { getAuth, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
@@ -1571,7 +1571,7 @@ export async function listHistory(uid: string): Promise<HistoryRow[]> {
 
 - [ ] **Step 4: Auth button**
 
-`web/components/auth-button.tsx`:
+`client/components/auth-button.tsx`:
 ```tsx
 "use client";
 import { useEffect, useState } from "react";
@@ -1599,7 +1599,7 @@ export default function AuthButton() {
 
 - [ ] **Step 5: Sign-in page**
 
-`web/app/[locale]/signin/page.tsx`:
+`client/app/[locale]/signin/page.tsx`:
 ```tsx
 "use client";
 import { useLocale, useTranslations } from "next-intl";
@@ -1630,7 +1630,7 @@ export default function SignIn() {
 
 - [ ] **Step 6: History page**
 
-`web/app/[locale]/history/page.tsx`:
+`client/app/[locale]/history/page.tsx`:
 ```tsx
 "use client";
 import { useEffect, useState } from "react";
@@ -1694,7 +1694,7 @@ Add to every `messages/*.json`:
 - [ ] **Step 9: Commit**
 
 ```bash
-git add web/lib/firebase.ts web/components/auth-button.tsx web/app/[locale]/signin web/app/[locale]/history web/firestore.rules web/components/upload-form.tsx web/components/results-view.tsx web/messages web/.env.example web/package.json web/bun.lock
+git add client/lib/firebase.ts client/components/auth-button.tsx client/app/[locale]/signin client/app/[locale]/history client/firestore.rules client/components/upload-form.tsx client/components/results-view.tsx client/messages client/.env.example client/package.json client/bun.lock
 git commit -m "feat(web): google sign-in + firestore history"
 ```
 

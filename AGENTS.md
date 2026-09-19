@@ -10,7 +10,7 @@ Paper Bridge: photograph school paperwork → action items in the parent's langu
 ## Scope rules
 
 - **Stay inside the spec.** No email/password auth, no image storage, no push notifications, no Google Calendar OAuth, no >8 pages. If you think the spec is wrong, say so in chat before coding — don't quietly widen it.
-- **Every view is a pure function of `DecodeResult`.** Gemini is the only non-deterministic step and lives only in `api/app/decoder.py`. `urgency` is computed in Python, never asked from the model.
+- **Every view is a pure function of `DecodeResult`.** Gemini is the only non-deterministic step and lives only in `server/app/decoder.py`. `urgency` is computed in Python, never asked from the model.
 - **Never persist images.** Only the result JSON goes to KV (30-day TTL).
 - **Auth is optional and frontend-only.** Firebase Auth (Google) + Firestore `users/{uid}/results`. FastAPI never sees a user; decoding never requires sign-in.
 - **Languages are exactly `es`, `vi`, `zh`.** Adding one means adding a `messages/<code>.json` too.
@@ -18,9 +18,9 @@ Paper Bridge: photograph school paperwork → action items in the parent's langu
 ## Code rules
 
 - Simplest thing that works. No abstractions with one implementation, no config for values that never change, no "for later" scaffolding.
-- **Package managers: `uv` for `api/`, `bun` for `web/`.** Commit `uv.lock` and `bun.lock`. Never add `package-lock.json` or `pnpm-lock.yaml`.
-- Backend: Python 3.12, `uv`, FastAPI, Pydantic v2. Run everything from `api/`. Tests: `uv run pytest`. Anything non-trivial gets one test.
-- Frontend: Next.js 16 App Router, TypeScript, Tailwind, shadcn/ui, `next-intl`. Run everything from `web/` with `bun`. `bun run tsc --noEmit && bun run build` must pass before pushing.
+- **Package managers: `uv` for `server/`, `bun` for `client/`.** Commit `uv.lock` and `bun.lock`. Never add `package-lock.json` or `pnpm-lock.yaml`.
+- Backend: Python 3.12, `uv`, FastAPI, Pydantic v2. Run everything from `server/`. Tests: `uv run pytest`. Anything non-trivial gets one test.
+- Frontend: Next.js 16 App Router, TypeScript, Tailwind, shadcn/ui, `next-intl`. Run everything from `client/` with `bun`. `bun run tsc --noEmit && bun run build` must pass before pushing.
 - Deliberate shortcuts get a `dev-note:` comment naming the ceiling (e.g. `# dev-note: sync request, add job queue if >8 pages needed`).
 - Design tokens (from the Pencil mockups): bg `#FBF8F2`, ink `#1C1A17`, muted `#6B655C`, line `#E6E0D6`, accent `#1F5F4A`, accent-soft `#DDEEE6`, danger `#B3261E`, warn `#9A5B00`. Headings Fraunces, body Inter.
 
