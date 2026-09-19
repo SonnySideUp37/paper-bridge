@@ -2,9 +2,10 @@
 import { useState, useSyncExternalStore } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { ArrowLeft, CalendarPlus, Link as LinkIcon } from "lucide-react";
-import { icsUrl, type ActionItem, type DecodeResult, type Urgency } from "@/lib/api";
+import { icsUrl, urgencyOf, type ActionItem, type DecodeResult, type Urgency } from "@/lib/api";
 import ItemCard from "./item-card";
 import ReplyDrawer from "./reply-drawer";
+import AuthButton from "./auth-button";
 
 const GROUPS: { key: Urgency; label: string; dot: string }[] = [
   { key: "overdue", label: "groupOverdue", dot: "bg-danger" },
@@ -27,7 +28,7 @@ export default function ResultsView({ id, initial }: { id: string | null; initia
   const result: DecodeResult | null = initial ?? (local ? JSON.parse(local) : null);
   if (!result) return null;
 
-  const items = result.items;
+  const items = result.items.map((i) => ({ ...i, urgency: urgencyOf(i.due_date) }));
   const thisWeek = items.filter((i) => i.urgency === "overdue" || i.urgency === "this_week").length;
   const owed = items.reduce((s, i) => s + (i.amount_usd ?? 0), 0);
   const toSign = items.filter((i) => i.needs_signature).length;
@@ -47,6 +48,8 @@ export default function ResultsView({ id, initial }: { id: string | null; initia
             <ArrowLeft size={18} />
             {t("newStack")}
           </a>
+          <div className="flex items-center gap-3">
+          <AuthButton />
           {id && (
             <button
               onClick={() => {
@@ -59,6 +62,7 @@ export default function ResultsView({ id, initial }: { id: string | null; initia
               {copied ? t("copied") : t("share")}
             </button>
           )}
+          </div>
         </div>
 
         <header className="space-y-1">

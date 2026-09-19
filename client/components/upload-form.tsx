@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { Camera, FileCheck, Loader2, Plus, Sparkles } from "lucide-react";
 import { decode, type Lang } from "@/lib/api";
 import { downscale } from "@/lib/image";
+import { saveToHistory } from "@/lib/firebase";
+import AuthButton from "./auth-button";
 
 const LANGS: { code: Lang; label: string }[] = [
   { code: "es", label: "Español" },
@@ -41,6 +43,7 @@ export default function UploadForm() {
     try {
       const prepped = await Promise.all(files.map((f) => downscale(f)));
       const { id, result } = await decode(prepped, lang);
+      if (id) saveToHistory(result).catch(() => {});
       if (id) router.push(`/${locale}/r/${id}`);
       else {
         sessionStorage.setItem("pb:last", JSON.stringify(result));
@@ -56,8 +59,11 @@ export default function UploadForm() {
   return (
     <main className="mx-auto max-w-md space-y-7 px-5 pb-8 pt-4">
       <header className="space-y-2">
-        <div className="flex items-center gap-2 text-sm font-semibold text-brand">
-          <FileCheck size={20} /> Paper Bridge
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 text-sm font-semibold text-brand">
+            <FileCheck size={20} /> Paper Bridge
+          </div>
+          <AuthButton />
         </div>
         <h1 className="font-serif text-[34px] font-semibold leading-tight">
           {busy ? t("decoding", { n }) : t("title")}

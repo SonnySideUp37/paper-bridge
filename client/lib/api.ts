@@ -41,3 +41,14 @@ export async function getResult(id: string): Promise<DecodeResult | null> {
 }
 
 export const icsUrl = (id: string) => `${API}/r/${id}/calendar.ics`;
+
+// dev-note: mirrors server compute_urgency but against *now*, so an old share link regroups correctly
+export function urgencyOf(due: string | null, today = new Date()): Urgency {
+  if (!due) return "none";
+  const d = new Date(`${due}T00:00`);
+  const t0 = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const days = Math.round((d.getTime() - t0.getTime()) / 86400000);
+  if (days < 0) return "overdue";
+  if (days <= 7) return "this_week";
+  return "later";
+}

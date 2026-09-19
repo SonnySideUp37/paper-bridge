@@ -49,6 +49,7 @@
     "google": "Continuar con Google",
     "optional": "Iniciar sesión es opcional. Puedes descifrar sin cuenta.",
     "empty": "Aún no hay nada. Descifra un montón y aparecerá aquí.",
-    "items": "{n} elementos"
+    "items": "{n} elementos",
+    "newStack": "Descifrar un nuevo montón"
   }
 }
