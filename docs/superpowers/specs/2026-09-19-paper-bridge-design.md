@@ -32,8 +32,8 @@ Synchronous request/response. No queue, no polling. Client downscales images to 
 
 ```
 paper-bridge/
-  web/        Next.js app (Vercel)
-  api/        FastAPI app (Railway, Dockerfile)
+  client/        Next.js app (Vercel)
+  server/        FastAPI app (Railway, Dockerfile)
     app/main.py         routes
     app/decoder.py      Gemini calls → DecodeResult
     app/ics.py          DecodeResult → .ics bytes
@@ -147,23 +147,23 @@ Cloudflare KV REST API via `httpx`: `PUT .../values/{id}?expiration_ttl=2592000`
 
 ## Testing
 
-- `api/tests/test_decoder.py` — 5 real public district newsletters/flyers in `tests/fixtures/*.{jpg,pdf}` with `*.expected.json` listing required `(due_date, amount_usd, needs_signature)` tuples. Assert every expected tuple appears in output (recall); allow extra items. Runs against live Gemini, skipped without `GEMINI_API_KEY`.
-- `api/tests/test_ics.py` — build `DecodeResult` fixture → `ics.build()` → parse back with `icalendar` → assert event count, all-day flag, alarm presence.
-- `api/tests/test_urgency.py` — `compute_urgency` boundary dates.
+- `server/tests/test_decoder.py` — 5 real public district newsletters/flyers in `tests/fixtures/*.{jpg,pdf}` with `*.expected.json` listing required `(due_date, amount_usd, needs_signature)` tuples. Assert every expected tuple appears in output (recall); allow extra items. Runs against live Gemini, skipped without `GEMINI_API_KEY`.
+- `server/tests/test_ics.py` — build `DecodeResult` fixture → `ics.build()` → parse back with `icalendar` → assert event count, all-day flag, alarm presence.
+- `server/tests/test_urgency.py` — `compute_urgency` boundary dates.
 - Frontend: `tsc --noEmit` + `next build` in CI. No component tests.
 
 ## Package managers
 
-- Backend: **`uv`** (`uv sync`, `uv run …`). Lockfile `api/uv.lock` is committed.
-- Frontend: **`bun`** (`bun install`, `bun dev`, `bunx`). Lockfile `web/bun.lock` is committed. Do not add `package-lock.json` / `pnpm-lock.yaml`.
+- Backend: **`uv`** (`uv sync`, `uv run …`). Lockfile `server/uv.lock` is committed.
+- Frontend: **`bun`** (`bun install`, `bun dev`, `bunx`). Lockfile `client/bun.lock` is committed. Do not add `package-lock.json` / `pnpm-lock.yaml`.
 
 ## Deployment
 
 | Piece | Where | Notes |
 |---|---|---|
-| `web/` | Vercel | `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_FIREBASE_*` (apiKey, authDomain, projectId, appId) |
+| `client/` | Vercel | `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_FIREBASE_*` (apiKey, authDomain, projectId, appId) |
 | Firebase | Google | Auth (Google provider) + Firestore, free Spark plan |
-| `api/` | Railway (Dockerfile, `uvicorn`) | `GEMINI_API_KEY`, `CF_ACCOUNT_ID`, `CF_KV_NAMESPACE_ID`, `CF_API_TOKEN`, `ALLOWED_ORIGIN` |
+| `server/` | Railway (Dockerfile, `uvicorn`) | `GEMINI_API_KEY`, `CF_ACCOUNT_ID`, `CF_KV_NAMESPACE_ID`, `CF_API_TOKEN`, `ALLOWED_ORIGIN` |
 | KV | Cloudflare | one namespace `paperbridge-results` |
 
 ## Demo script (for judges)
