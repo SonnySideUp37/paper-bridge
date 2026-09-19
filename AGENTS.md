@@ -9,16 +9,18 @@ Paper Bridge: photograph school paperwork → action items in the parent's langu
 
 ## Scope rules
 
-- **Stay inside the spec.** No accounts, no image storage, no push notifications, no Google Calendar OAuth, no >8 pages. If you think the spec is wrong, say so in chat before coding — don't quietly widen it.
+- **Stay inside the spec.** No email/password auth, no image storage, no push notifications, no Google Calendar OAuth, no >8 pages. If you think the spec is wrong, say so in chat before coding — don't quietly widen it.
 - **Every view is a pure function of `DecodeResult`.** Gemini is the only non-deterministic step and lives only in `api/app/decoder.py`. `urgency` is computed in Python, never asked from the model.
 - **Never persist images.** Only the result JSON goes to KV (30-day TTL).
+- **Auth is optional and frontend-only.** Firebase Auth (Google) + Firestore `users/{uid}/results`. FastAPI never sees a user; decoding never requires sign-in.
 - **Languages are exactly `es`, `vi`, `zh`.** Adding one means adding a `messages/<code>.json` too.
 
 ## Code rules
 
 - Simplest thing that works. No abstractions with one implementation, no config for values that never change, no "for later" scaffolding.
+- **Package managers: `uv` for `api/`, `bun` for `web/`.** Commit `uv.lock` and `bun.lock`. Never add `package-lock.json` or `pnpm-lock.yaml`.
 - Backend: Python 3.12, `uv`, FastAPI, Pydantic v2. Run everything from `api/`. Tests: `uv run pytest`. Anything non-trivial gets one test.
-- Frontend: Next.js 15 App Router, TypeScript, Tailwind, shadcn/ui, `next-intl`. Run everything from `web/` with `pnpm`. `pnpm tsc --noEmit && pnpm build` must pass before pushing.
+- Frontend: Next.js 16 App Router, TypeScript, Tailwind, shadcn/ui, `next-intl`. Run everything from `web/` with `bun`. `bun run tsc --noEmit && bun run build` must pass before pushing.
 - Deliberate shortcuts get a `dev-note:` comment naming the ceiling (e.g. `# dev-note: sync request, add job queue if >8 pages needed`).
 - Design tokens (from the Pencil mockups): bg `#FBF8F2`, ink `#1C1A17`, muted `#6B655C`, line `#E6E0D6`, accent `#1F5F4A`, accent-soft `#DDEEE6`, danger `#B3261E`, warn `#9A5B00`. Headings Fraunces, body Inter.
 
@@ -39,6 +41,7 @@ Paper Bridge: photograph school paperwork → action items in the parent's langu
 | `CF_ACCOUNT_ID`, `CF_KV_NAMESPACE_ID`, `CF_API_TOKEN` | Railway | Cloudflare KV |
 | `ALLOWED_ORIGIN` | Railway | the Vercel URL (CORS) |
 | `NEXT_PUBLIC_API_URL` | Vercel | the Railway URL |
+| `NEXT_PUBLIC_FIREBASE_API_KEY`, `..._AUTH_DOMAIN`, `..._PROJECT_ID`, `..._APP_ID` | Vercel | Firebase Auth + Firestore (public config, not secrets) |
 
 ## Demo (what judges see)
 

@@ -6,7 +6,7 @@
 
 **Architecture:** Next.js frontend posts images to a FastAPI `/decode` endpoint; FastAPI calls Gemini once per page in parallel, merges, stores the JSON result in Cloudflare KV under a random ID, returns it. Results page and `.ics` are pure functions of that JSON.
 
-**Tech Stack:** Python 3.12, FastAPI, `google-genai`, `icalendar`, `httpx`, pytest · Next.js 15 (App Router), TypeScript, Tailwind, shadcn/ui, `next-intl` · Railway (API), Vercel (web), Cloudflare KV.
+**Tech Stack:** Python 3.12, FastAPI, `google-genai`, `icalendar`, `httpx`, pytest · Next.js 16 (App Router), TypeScript, Tailwind, shadcn/ui, `next-intl`, `firebase` (Auth + Firestore Lite) · Railway (API), Vercel (web), Cloudflare KV · package managers: `uv` (api), `bun` (web).
 
 **Spec:** `docs/superpowers/specs/2026-09-19-paper-bridge-design.md`
 
@@ -19,7 +19,8 @@
 - Result ID: 10-char URL-safe random.
 - Client downscales images to ≤1600 px longest edge, JPEG q=0.85, before upload.
 - Gemini model is read from env `GEMINI_MODEL`, default `gemini-2.5-flash`.
-- Backend package manager: `uv`. Frontend: `pnpm`.
+- Backend package manager: `uv` (commit `api/uv.lock`). Frontend: `bun` (commit `web/bun.lock`; never add npm/pnpm lockfiles).
+- Auth is optional and frontend-only: Firebase Auth (Google provider) + Firestore `users/{uid}/results/{id}`. FastAPI never sees a user.
 - Python: run all commands from `api/`. TS: run all commands from `web/`.
 
 ## File Structure
@@ -50,9 +51,14 @@ web/
   components/results-view.tsx
   components/item-card.tsx
   components/reply-drawer.tsx
+  app/[locale]/signin/page.tsx   Google sign-in
+  app/[locale]/history/page.tsx  saved stacks (signed-in only)
+  components/auth-button.tsx     sign in / avatar + sign out
   lib/api.ts          fetch wrappers + types
   lib/image.ts        downscale()
-  i18n/request.ts, i18n/routing.ts, middleware.ts
+  lib/firebase.ts     app, auth, db singletons + saveToHistory()/listHistory()
+  firestore.rules
+  i18n/request.ts, i18n/routing.ts, proxy.ts
   messages/{en,es,vi,zh}.json
 ```
 
@@ -879,7 +885,7 @@ git commit -m "chore(api): dockerfile + env example"
 ### Task 7: Web scaffold + i18n + API client
 
 **Files:**
-- Create: `web/` (Next.js), `web/lib/api.ts`, `web/lib/image.ts`, `web/i18n/routing.ts`, `web/i18n/request.ts`, `web/middleware.ts`, `web/messages/{en,es,vi,zh}.json`, `web/app/[locale]/layout.tsx`, `web/.env.example`
+- Create: `web/` (Next.js), `web/lib/api.ts`, `web/lib/image.ts`, `web/i18n/routing.ts`, `web/i18n/request.ts`, `web/proxy.ts`, `web/messages/{en,es,vi,zh}.json`, `web/app/[locale]/layout.tsx`, `web/.env.example`
 
 **Interfaces:**
 - Produces: TS types mirroring Task 1 models; `decode(files, lang)`, `getResult(id)`, `icsUrl(id)`; `downscale(file) -> Promise<File>`; locales `["en","es","vi","zh"]` (`en` for dev only; UI picker shows the three).
@@ -887,9 +893,9 @@ git commit -m "chore(api): dockerfile + env example"
 - [ ] **Step 1: Scaffold**
 
 ```bash
-pnpm create next-app@latest web --ts --tailwind --eslint --app --src-dir=false --import-alias "@/*" --use-pnpm
-cd web && pnpm dlx shadcn@latest init -d && pnpm dlx shadcn@latest add button card badge drawer sheet
-pnpm add next-intl
+bun create next-app@latest web --ts --tailwind --eslint --app --src-dir=false --import-alias "@/*" --use-bun
+cd web && bunx --bun shadcn@latest init -d && bunx --bun shadcn@latest add button card badge drawer sheet
+bun add next-intl
 ```
 
 - [ ] **Step 2: i18n plumbing**
@@ -911,12 +917,12 @@ export default getRequestConfig(async ({ requestLocale }) => {
 });
 ```
 
-`web/middleware.ts`:
+`web/proxy.ts` (Next 16 renamed `middleware.ts` → `proxy.ts`; next-intl's import name is unchanged):
 ```ts
 import createMiddleware from "next-intl/middleware";
 import { routing } from "./i18n/routing";
 export default createMiddleware(routing);
-export const config = { matcher: ["/", "/(en|es|vi|zh)/:path*"] };
+export const config = { matcher: "/((?!api|_next|_vercel|.*\\..*).*)" };
 ```
 
 `web/next.config.ts`:
@@ -1054,7 +1060,7 @@ export async function downscale(file: File, max = 1600): Promise<File> {
 
 - [ ] **Step 5: Verify**
 
-Run: `pnpm tsc --noEmit && pnpm build` → passes (there's no page yet; `[locale]/page.tsx` comes in Task 8 — create a placeholder `export default function Page(){return null}` so build passes, Task 8 replaces it).
+Run: `bun run tsc --noEmit && bun run build` → passes (there's no page yet; `[locale]/page.tsx` comes in Task 8 — create a placeholder `export default function Page(){return null}` so build passes, Task 8 replaces it).
 
 - [ ] **Step 6: Commit**
 
@@ -1195,7 +1201,7 @@ export default function UploadForm() {
 
 - [ ] **Step 3: Manual verify**
 
-Run API: `cd api && uv run uvicorn app.main:app --reload` (with real `.env`). Run web: `cd web && pnpm dev`. Open `http://localhost:3000/vi`, pick 2 photos, click Decode → lands on `/vi/r/<id>` (404 page for now — that's Task 9). Check Network tab: request bodies are JPEG ≤1600px.
+Run API: `cd api && uv run uvicorn app.main:app --reload` (with real `.env`). Run web: `cd web && bun dev`. Open `http://localhost:3000/vi`, pick 2 photos, click Decode → lands on `/vi/r/<id>` (404 page for now — that's Task 9). Check Network tab: request bodies are JPEG ≤1600px.
 
 - [ ] **Step 4: Commit**
 
@@ -1413,7 +1419,7 @@ Add to `web/app/globals.css` (after Tailwind import): `.font-serif { font-family
 
 - [ ] **Step 5: Verify**
 
-`pnpm tsc --noEmit && pnpm build` → passes. Manual: run through upload → results with real photos; click "Show original text"; open a reply drawer, Copy; tap "Add to calendar" downloads `paper-bridge.ics` and opens in Calendar app on phone (test via Vercel preview URL on a phone).
+`bun run tsc --noEmit && bun run build` → passes. Manual: run through upload → results with real photos; click "Show original text"; open a reply drawer, Copy; tap "Add to calendar" downloads `paper-bridge.ics` and opens in Calendar app on phone (test via Vercel preview URL on a phone).
 
 - [ ] **Step 6: Commit**
 
@@ -1473,7 +1479,7 @@ Then set `ALLOWED_ORIGIN` on Railway to the Vercel URL and redeploy the API.
 
 - [ ] **Step 4: README**
 
-Replace `README.md` with: one-paragraph pitch, the demo script from the spec, local dev (`api`: `cp .env.example .env && uv sync && uv run uvicorn app.main:app --reload`; `web`: `cp .env.example .env.local && pnpm i && pnpm dev`), and env var table.
+Replace `README.md` with: one-paragraph pitch, the demo script from the spec, local dev (`api`: `cp .env.example .env && uv sync && uv run uvicorn app.main:app --reload`; `web`: `cp .env.example .env.local && bun install && bun dev`), and env var table.
 
 - [ ] **Step 5: Commit**
 
@@ -1484,8 +1490,218 @@ git commit -m "test: live recall fixtures; docs: readme"
 
 ---
 
+### Task 11: Google sign-in + history (Firebase)
+
+**Files:**
+- Create: `web/lib/firebase.ts`, `web/components/auth-button.tsx`, `web/app/[locale]/signin/page.tsx`, `web/app/[locale]/history/page.tsx`, `web/firestore.rules`
+- Modify: `web/components/upload-form.tsx` (call `saveToHistory` after decode), `web/components/results-view.tsx` (mount `<AuthButton/>` in top bar), `web/messages/*.json` (add `auth.*` keys), `web/.env.example`
+
+**Interfaces:**
+- Consumes: `DecodeResult` from `lib/api.ts`.
+- Produces: `auth`, `db`, `googleSignIn()`, `saveToHistory(result: DecodeResult)`, `listHistory(uid): Promise<HistoryRow[]>`, `type HistoryRow = {id, title, itemCount, targetLanguage, createdAt: number}`.
+
+- [ ] **Step 1: Firebase console (5 min)**
+
+console.firebase.google.com → Add project `paper-bridge` → Build → Authentication → Sign-in method → enable **Google** → Build → Firestore → create database (production mode). Project settings → Your apps → Web → copy config. Add the Vercel domain under Authentication → Settings → Authorized domains.
+
+`web/.env.example` append:
+```
+NEXT_PUBLIC_FIREBASE_API_KEY=
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=
+NEXT_PUBLIC_FIREBASE_APP_ID=
+```
+
+- [ ] **Step 2: Rules**
+
+`web/firestore.rules` (paste into console → Firestore → Rules → Publish):
+```
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /users/{uid}/results/{id} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+    }
+  }
+}
+```
+
+- [ ] **Step 3: Firebase module**
+
+```bash
+bun add firebase
+```
+
+`web/lib/firebase.ts`:
+```ts
+import { getApps, initializeApp } from "firebase/app";
+import { getAuth, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
+import { collection, doc, getDocs, getFirestore, orderBy, query, setDoc } from "firebase/firestore/lite";
+import type { DecodeResult } from "./api";
+
+const app = getApps()[0] ?? initializeApp({
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+});
+export const auth = getAuth(app);
+export const db = getFirestore(app);
+
+export const googleSignIn = () => signInWithPopup(auth, new GoogleAuthProvider());
+
+export type HistoryRow = { id: string; title: string; itemCount: number; targetLanguage: string; createdAt: number };
+
+// dev-note: title = first item's title; good enough for a list row
+export async function saveToHistory(result: DecodeResult) {
+  const uid = auth.currentUser?.uid;
+  if (!uid) return;
+  const row: HistoryRow = {
+    id: result.id, title: result.items[0]?.title ?? "", itemCount: result.items.length,
+    targetLanguage: result.target_language, createdAt: Date.now(),
+  };
+  await setDoc(doc(db, "users", uid, "results", result.id), row);
+}
+
+export async function listHistory(uid: string): Promise<HistoryRow[]> {
+  const q = query(collection(db, "users", uid, "results"), orderBy("createdAt", "desc"));
+  return (await getDocs(q)).docs.map((d) => d.data() as HistoryRow);
+}
+```
+
+- [ ] **Step 4: Auth button**
+
+`web/components/auth-button.tsx`:
+```tsx
+"use client";
+import { useEffect, useState } from "react";
+import { onAuthStateChanged, signOut, type User } from "firebase/auth";
+import { useLocale, useTranslations } from "next-intl";
+import { auth } from "@/lib/firebase";
+
+export default function AuthButton() {
+  const t = useTranslations("auth");
+  const locale = useLocale();
+  const [user, setUser] = useState<User | null | undefined>(undefined);
+  useEffect(() => onAuthStateChanged(auth, setUser), []);
+  if (user === undefined) return null;
+  if (!user) return <a href={`/${locale}/signin`} className="text-sm font-semibold text-[#1F5F4A]">{t("signIn")}</a>;
+  return (
+    <div className="flex items-center gap-2">
+      <a href={`/${locale}/history`} className="text-sm font-semibold text-[#1F5F4A]">{t("history")}</a>
+      <button onClick={() => signOut(auth)} title={t("signOut")}>
+        <img src={user.photoURL ?? ""} alt="" className="size-7 rounded-full" />
+      </button>
+    </div>
+  );
+}
+```
+
+- [ ] **Step 5: Sign-in page**
+
+`web/app/[locale]/signin/page.tsx`:
+```tsx
+"use client";
+import { useLocale, useTranslations } from "next-intl";
+import { useRouter } from "next/navigation";
+import { FileCheck } from "lucide-react";
+import { googleSignIn } from "@/lib/firebase";
+
+export default function SignIn() {
+  const t = useTranslations("auth");
+  const locale = useLocale();
+  const router = useRouter();
+  return (
+    <main className="mx-auto max-w-md px-5 pt-6 space-y-7">
+      <div className="flex items-center gap-2 text-[#1F5F4A] font-semibold text-sm"><FileCheck size={20} /> Paper Bridge</div>
+      <header className="space-y-2">
+        <h1 className="font-serif text-[34px] leading-tight font-semibold">{t("title")}</h1>
+        <p className="text-[#6B655C]">{t("subtitle")}</p>
+      </header>
+      <button onClick={async () => { await googleSignIn(); router.push(`/${locale}/history`); }}
+              className="flex w-full items-center justify-center gap-2 rounded-2xl border border-[#E6E0D6] bg-white py-4 font-semibold">
+        {t("google")}
+      </button>
+      <p className="text-center text-sm text-[#6B655C]">{t("optional")}</p>
+    </main>
+  );
+}
+```
+
+- [ ] **Step 6: History page**
+
+`web/app/[locale]/history/page.tsx`:
+```tsx
+"use client";
+import { useEffect, useState } from "react";
+import { onAuthStateChanged } from "firebase/auth";
+import { useLocale, useTranslations } from "next-intl";
+import { ChevronRight } from "lucide-react";
+import { auth, listHistory, type HistoryRow } from "@/lib/firebase";
+
+export default function History() {
+  const t = useTranslations("auth");
+  const locale = useLocale();
+  const [rows, setRows] = useState<HistoryRow[] | null>(null);
+  useEffect(() => onAuthStateChanged(auth, async (u) => {
+    if (!u) { location.href = `/${locale}/signin`; return; }
+    setRows(await listHistory(u.uid));
+  }), [locale]);
+  return (
+    <main className="mx-auto max-w-md px-5 pt-6 space-y-6">
+      <h1 className="font-serif text-[34px] leading-tight font-semibold">{t("history")}</h1>
+      {rows?.length === 0 && <p className="text-[#6B655C]">{t("empty")}</p>}
+      <ul className="space-y-2">
+        {rows?.map((r) => (
+          <li key={r.id}>
+            <a href={`/${locale}/r/${r.id}`} className="flex items-center justify-between rounded-2xl border border-[#E6E0D6] bg-white p-4">
+              <div className="min-w-0">
+                <p className="truncate font-semibold">{r.title}</p>
+                <p className="text-xs text-[#6B655C]">{new Date(r.createdAt).toLocaleDateString(locale)} · {t("items", { n: r.itemCount })}</p>
+              </div>
+              <ChevronRight size={18} className="text-[#6B655C]" />
+            </a>
+          </li>
+        ))}
+      </ul>
+    </main>
+  );
+}
+```
+
+- [ ] **Step 7: Wire in**
+
+In `upload-form.tsx`, after `const { id, result } = await decode(prepped, lang);` add:
+```ts
+if (id) saveToHistory(result).catch(() => {});
+```
+and `import { saveToHistory } from "@/lib/firebase";`. In `results-view.tsx` top bar, add `<AuthButton />` next to the Share button. Add `<AuthButton />` to the upload page header row too.
+
+Add to every `messages/*.json`:
+```json
+"auth": {
+  "signIn": "Sign in", "signOut": "Sign out", "history": "My stacks",
+  "title": "Keep every stack.", "subtitle": "Sign in to find your past results again on any device.",
+  "google": "Continue with Google", "optional": "Sign-in is optional. You can decode without an account.",
+  "empty": "No stacks yet. Decode one and it will show up here.", "items": "{n} items"
+}
+```
+
+- [ ] **Step 8: Verify**
+
+`bun run tsc --noEmit && bun run build` → passes. Manual: sign in with Google, decode a stack, open `/vi/history` → row appears → click → results page. Sign out → `/history` redirects to `/signin`. Firestore console shows `users/<uid>/results/<id>`.
+
+- [ ] **Step 9: Commit**
+
+```bash
+git add web/lib/firebase.ts web/components/auth-button.tsx web/app/[locale]/signin web/app/[locale]/history web/firestore.rules web/components/upload-form.tsx web/components/results-view.tsx web/messages web/.env.example web/package.json web/bun.lock
+git commit -m "feat(web): google sign-in + firestore history"
+```
+
+---
+
 ## Self-review
 
-- **Spec coverage:** models/urgency (T1), ics + VALARM (T2), KV 30d (T3), per-page + merge + retry + AllPagesFailed (T4), all 3 routes + 400/404/502 + KV-fail fallback + CORS (T5), Docker/Railway/env (T6), i18n + downscale (T7), upload UI + 8-page cap (T8), results grouping/summary strip/source quote/reply drawer/sticky ics bar/expired page/failed page notice (T9), 5 fixtures + live test + deploy (T10). Share link: copy button in T9. ✔
+- **Spec coverage:** models/urgency (T1), ics + VALARM (T2), KV 30d (T3), per-page + merge + retry + AllPagesFailed (T4), all 3 routes + 400/404/502 + KV-fail fallback + CORS (T5), Docker/Railway/env (T6), i18n + downscale (T7), upload UI + 8-page cap (T8), results grouping/summary strip/source quote/reply drawer/sticky ics bar/expired page/failed page notice (T9), 5 fixtures + live test + deploy (T10), Firebase Google sign-in + Firestore history + rules (T11). Share link: copy button in T9. ✔
 - **Placeholders:** none.
 - **Type consistency:** `decode(pages, target_language, today, client=None)` used identically in T4/T5/T10; `store.put/get` in T3/T5; `build_ics` in T2/T5; TS `DecodeResult` mirrors Python; `/r/local` fallback in T8 handled in T9.

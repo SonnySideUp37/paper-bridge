@@ -12,14 +12,14 @@ Photograph the stack → get a short list of action items in your language → o
 
 ## Scope
 
-**In:** upload up to 8 images/PDF pages · Spanish, Vietnamese, Chinese (Simplified) · action-item extraction · `.ics` export · English reply drafts · anonymous share link (30-day TTL).
+**In:** upload up to 8 images/PDF pages · Spanish, Vietnamese, Chinese (Simplified) · action-item extraction · `.ics` export · English reply drafts · anonymous share link (30-day TTL) · optional Google sign-in (Firebase Auth) that saves a history of your decoded stacks.
 
-**Out (deliberately):** accounts, storing original images, push notifications, Google Calendar OAuth, PDF text-layer parsing, more than 8 pages per batch.
+**Out (deliberately):** email/password accounts, storing original images, push notifications, Google Calendar OAuth, PDF text-layer parsing, more than 8 pages per batch.
 
 ## Architecture
 
 ```
-Browser (Next.js 15, TS, shadcn)  ──POST /decode──▶  FastAPI (Railway)  ──▶ Gemini (vision, per page)
+Browser (Next.js 16, TS, shadcn)  ──POST /decode──▶  FastAPI (Railway)  ──▶ Gemini (vision, per page)
         │                                               │
         │◀── {id, result} ──────────────────────────────┤──▶ Cloudflare KV (JSON, TTL 30d)
         │
@@ -104,16 +104,27 @@ Retry policy: one retry per page on Gemini error; then `PageSummary.failed = Tru
 
 `icalendar` lib. One `VEVENT` per item with `due_date`. All-day if no `due_time`. `SUMMARY` = translated title; `DESCRIPTION` = `title_en` + `source_quote` + amount if any. Payment/signature items get a `VALARM` 2 days before. `UID` = `{result.id}-{item.id}@paperbridge`.
 
+## Auth + history (frontend only)
+
+Decoding never requires sign-in. Signing in only adds a **History** page.
+
+- **Firebase Auth**, Google provider only, client-side popup. Free tier.
+- **Firestore** document `users/{uid}/results/{resultId}` = `{title, itemCount, targetLanguage, createdAt}` written by the browser right after a successful `/decode` when a user is signed in. Security rule: `allow read, write: if request.auth.uid == uid`.
+- `/history` lists those docs newest-first, each linking to `/r/{id}`. Result JSON itself still lives only in KV; if KV expired, the history row links to the 404 page.
+- FastAPI knows nothing about users. No token verification, no user table.
+
 ## Storage (`store.py`)
 
 Cloudflare KV REST API via `httpx`: `PUT .../values/{id}?expiration_ttl=2592000` with the JSON, `GET` to read. Only `DecodeResult` is stored — never the images.
 
 ## Frontend
 
-**Stack:** Next.js 15 App Router, TypeScript, Tailwind, shadcn/ui, `next-intl` for the three UI locales (UI chrome is in the parent's language too, not just the results).
+**Stack:** Next.js 16 App Router, TypeScript, Tailwind, shadcn/ui, `next-intl` for the three UI locales, `firebase` (Auth + Firestore) (UI chrome is in the parent's language too, not just the results).
 
 **Routes**
 - `/` — Language picker (persisted in `localStorage`, also sets UI locale) → file input (`accept="image/*,application/pdf" capture="environment" multiple`) → thumbnail grid → **Decode** button. While decoding: thumbnails pulse, status line "Reading page 3 of 5…". Single page, state machine `idle → uploading → done|error`.
+- `/signin` — brand, one **Continue with Google** button, note that sign-in is optional.
+- `/history` — signed-in only; list of past stacks (title, date, item count) → `/r/{id}`.
 - `/r/[id]` — Server component fetches `GET /r/{id}`. Layout:
   - Summary strip: "2 due this week · $15 owed · 1 needs signature"
   - Items grouped by `urgency` (Overdue / This week / Later / Info), each a card: title, chips (date, amount, ✍️ signature, ✉️ reply), expandable "Original text" showing `source_quote` + page number.
@@ -141,11 +152,17 @@ Cloudflare KV REST API via `httpx`: `PUT .../values/{id}?expiration_ttl=2592000`
 - `api/tests/test_urgency.py` — `compute_urgency` boundary dates.
 - Frontend: `tsc --noEmit` + `next build` in CI. No component tests.
 
+## Package managers
+
+- Backend: **`uv`** (`uv sync`, `uv run …`). Lockfile `api/uv.lock` is committed.
+- Frontend: **`bun`** (`bun install`, `bun dev`, `bunx`). Lockfile `web/bun.lock` is committed. Do not add `package-lock.json` / `pnpm-lock.yaml`.
+
 ## Deployment
 
 | Piece | Where | Notes |
 |---|---|---|
-| `web/` | Vercel | `NEXT_PUBLIC_API_URL` |
+| `web/` | Vercel | `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_FIREBASE_*` (apiKey, authDomain, projectId, appId) |
+| Firebase | Google | Auth (Google provider) + Firestore, free Spark plan |
 | `api/` | Railway (Dockerfile, `uvicorn`) | `GEMINI_API_KEY`, `CF_ACCOUNT_ID`, `CF_KV_NAMESPACE_ID`, `CF_API_TOKEN`, `ALLOWED_ORIGIN` |
 | KV | Cloudflare | one namespace `paperbridge-results` |
 
