@@ -120,7 +120,15 @@ export default function ResultsView({
               </div>
               <div className="grid gap-2.5 md:grid-cols-2">
                 {list.map((i) => (
-                  <ItemCard key={i.id} item={i} onReply={() => setReply(i)} />
+                  <ItemCard
+                    key={i.id}
+                    item={i}
+                    onReply={
+                      result.reply_drafts.some((d) => d.item_id === i.id)
+                        ? () => setReply(i)
+                        : undefined
+                    }
+                  />
                 ))}
               </div>
             </section>

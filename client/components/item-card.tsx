@@ -1,7 +1,14 @@
 "use client";
 import { useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import { Calendar, ChevronDown, DollarSign, Mail, MapPin, PenLine } from "lucide-react";
+import {
+  Calendar,
+  ChevronDown,
+  DollarSign,
+  Mail,
+  MapPin,
+  PenLine,
+} from "lucide-react";
 import type { ActionItem } from "@/lib/api";
 
 const TONE = {
@@ -10,16 +17,32 @@ const TONE = {
   ok: "bg-brand-soft text-brand",
 } as const;
 
-function Chip({ tone, icon, children }: { tone: keyof typeof TONE; icon: React.ReactNode; children: React.ReactNode }) {
+function Chip({
+  tone,
+  icon,
+  children,
+}: {
+  tone: keyof typeof TONE;
+  icon: React.ReactNode;
+  children: React.ReactNode;
+}) {
   return (
-    <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold ${TONE[tone]}`}>
+    <span
+      className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold ${TONE[tone]}`}
+    >
       {icon}
       {children}
     </span>
   );
 }
 
-export default function ItemCard({ item, onReply }: { item: ActionItem; onReply: () => void }) {
+export default function ItemCard({
+  item,
+  onReply,
+}: {
+  item: ActionItem;
+  onReply?: () => void;
+}) {
   const t = useTranslations("results");
   const locale = useLocale();
   const [open, setOpen] = useState(false);
@@ -33,16 +56,24 @@ export default function ItemCard({ item, onReply }: { item: ActionItem; onReply:
     : null;
   const urgent = item.urgency === "overdue" || item.urgency === "this_week";
   const tone = urgent ? "danger" : item.urgency === "later" ? "warn" : "ok";
-  const Icon = item.needs_signature ? PenLine : item.amount_usd ? DollarSign : Calendar;
+  const Icon = item.needs_signature
+    ? PenLine
+    : item.amount_usd
+      ? DollarSign
+      : Calendar;
 
   return (
     <article className="space-y-3 rounded-2xl border border-line bg-surface p-4">
       <div className="flex gap-3">
-        <span className={`grid size-10 shrink-0 place-items-center rounded-xl ${TONE[tone]}`}>
+        <span
+          className={`grid size-10 shrink-0 place-items-center rounded-xl ${TONE[tone]}`}
+        >
           <Icon size={20} />
         </span>
         <div className="min-w-0">
-          <h3 className="text-[17px] font-semibold leading-snug">{item.title}</h3>
+          <h3 className="text-[17px] font-semibold leading-snug">
+            {item.title}
+          </h3>
           <p className="text-[13px] text-muted">{item.title_en}</p>
         </div>
       </div>
@@ -78,16 +109,21 @@ export default function ItemCard({ item, onReply }: { item: ActionItem; onReply:
       {open ? (
         <blockquote className="space-y-1 rounded-lg border-l-[3px] border-line bg-bg px-3 py-2.5">
           <p className="text-[13px] italic text-muted">“{item.source_quote}”</p>
-          <p className="text-[11px] font-semibold text-muted">{t("page", { n: item.source_page + 1 })}</p>
+          <p className="text-[11px] font-semibold text-muted">
+            {t("page", { n: item.source_page + 1 })}
+          </p>
         </blockquote>
       ) : (
-        <button onClick={() => setOpen(true)} className="flex items-center gap-1 text-[13px] font-semibold text-brand">
+        <button
+          onClick={() => setOpen(true)}
+          className="flex items-center gap-1 text-[13px] font-semibold text-brand"
+        >
           {t("showOriginal")}
           <ChevronDown size={14} />
         </button>
       )}
 
-      {item.needs_reply && (
+      {onReply && (
         <button
           onClick={onReply}
           className="flex w-full items-center justify-center gap-2 rounded-xl bg-brand-soft py-3 text-sm font-semibold text-brand"

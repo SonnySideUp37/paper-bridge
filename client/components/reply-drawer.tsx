@@ -22,7 +22,7 @@ export default function ReplyDrawer({ item, draft, onClose }: { item: ActionItem
         }
       }}
     >
-      <DrawerContent className="bg-surface px-5 pb-8">
+      <DrawerContent className="mx-auto max-w-lg bg-surface px-5 pb-8">
         <DrawerTitle className="font-serif text-2xl font-semibold">{t("replyTitle")}</DrawerTitle>
         <p className="text-sm text-muted">{t("replyFor", { title: item?.title ?? "" })}</p>
         <div className="mt-4 space-y-2 rounded-xl border border-line bg-bg p-3.5">
