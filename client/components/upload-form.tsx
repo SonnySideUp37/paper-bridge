@@ -66,9 +66,8 @@ export default function UploadForm() {
   return (
     <>
       <SiteHeader locale={locale} />
-      {/* dev-note: one column on phone; on desktop the headline+language sit left, the dropzone right */}
-      <main className="mx-auto max-w-md space-y-7 px-5 pb-8 pt-6 md:grid md:max-w-5xl md:grid-cols-2 md:items-start md:gap-x-16 md:space-y-0 md:pt-14">
-        <div className="space-y-7 md:sticky md:top-8">
+      <main className="mx-auto max-w-md space-y-7 px-5 pb-8 pt-6 md:max-w-xl md:pt-14 md:text-center">
+        <div className="space-y-7">
           <header className="space-y-2">
             <h1 className="font-serif text-[34px] font-semibold leading-tight md:text-5xl">
               {busy ? t("decoding", { n }) : t("title")}
@@ -83,12 +82,12 @@ export default function UploadForm() {
               <p className="text-xs font-semibold tracking-wide text-muted">
                 {t("language")}
               </p>
-              <div className="flex gap-2">
+              <div className="flex gap-2 md:justify-center">
                 {LANGS.map((l) => (
                   <a
                     key={l.code}
                     href={`/${l.code}`}
-                    className={`flex-1 rounded-full border py-3 text-center text-[15px] ${
+                    className={`flex-1 rounded-full border px-6 py-3 text-center text-[15px] md:flex-none ${
                       l.code === lang
                         ? "border-brand bg-brand font-semibold text-white"
                         : "border-line bg-surface"
