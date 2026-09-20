@@ -144,3 +144,12 @@
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
   --font-serif: var(--font-fraunces), Georgia, serif;
 }
+
+/* dev-note: tailwind v4 removed the default pointer on buttons; restore it globally */
+@layer base {
+  button:not(:disabled),
+  summary,
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+}
