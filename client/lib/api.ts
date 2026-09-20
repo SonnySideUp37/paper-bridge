@@ -24,7 +24,8 @@ export interface DecodeResult {
   reply_drafts: { item_id: string; subject: string; body_en: string }[];
 }
 
-const API = process.env.NEXT_PUBLIC_API_URL!;
+// dev-note: tolerate a trailing slash in the env var (…railway.app/ + /decode would 404)
+const API = (process.env.NEXT_PUBLIC_API_URL ?? "").replace(/\/+$/, "");
 
 export async function decode(files: File[], lang: Lang): Promise<{ id: string | null; result: DecodeResult }> {
   const fd = new FormData();
