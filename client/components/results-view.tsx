@@ -2,7 +2,13 @@
 import { useState, useSyncExternalStore } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { ArrowLeft, CalendarPlus, Link as LinkIcon } from "lucide-react";
-import { icsUrl, urgencyOf, type ActionItem, type DecodeResult, type Urgency } from "@/lib/api";
+import {
+  icsUrl,
+  urgencyOf,
+  type ActionItem,
+  type DecodeResult,
+  type Urgency,
+} from "@/lib/api";
 import ItemCard from "./item-card";
 import ReplyDrawer from "./reply-drawer";
 import AuthButton from "./auth-button";
@@ -14,7 +20,13 @@ const GROUPS: { key: Urgency; label: string; dot: string }[] = [
   { key: "none", label: "groupInfo", dot: "bg-muted" },
 ];
 
-export default function ResultsView({ id, initial }: { id: string | null; initial: DecodeResult | null }) {
+export default function ResultsView({
+  id,
+  initial,
+}: {
+  id: string | null;
+  initial: DecodeResult | null;
+}) {
   const t = useTranslations("results");
   const locale = useLocale();
   const [reply, setReply] = useState<ActionItem | null>(null);
@@ -25,11 +37,17 @@ export default function ResultsView({ id, initial }: { id: string | null; initia
     () => sessionStorage.getItem("pb:last"),
     () => null,
   );
-  const result: DecodeResult | null = initial ?? (local ? JSON.parse(local) : null);
+  const result: DecodeResult | null =
+    initial ?? (local ? JSON.parse(local) : null);
   if (!result) return null;
 
-  const items = result.items.map((i) => ({ ...i, urgency: urgencyOf(i.due_date) }));
-  const thisWeek = items.filter((i) => i.urgency === "overdue" || i.urgency === "this_week").length;
+  const items = result.items.map((i) => ({
+    ...i,
+    urgency: urgencyOf(i.due_date),
+  }));
+  const thisWeek = items.filter(
+    (i) => i.urgency === "overdue" || i.urgency === "this_week",
+  ).length;
   const owed = items.reduce((s, i) => s + (i.amount_usd ?? 0), 0);
   const toSign = items.filter((i) => i.needs_signature).length;
   const dated = items.filter((i) => i.due_date).length;
@@ -41,39 +59,51 @@ export default function ResultsView({ id, initial }: { id: string | null; initia
   ];
 
   return (
-    <main className="mx-auto max-w-md pb-28">
-      <div className="space-y-6 px-5 pt-3">
+    <main className="mx-auto max-w-md pb-28 md:max-w-3xl">
+      <div className="space-y-6 px-5 pt-6">
         <div className="flex items-center justify-between">
-          <a href={`/${locale}`} className="flex items-center gap-1.5 font-medium text-brand">
+          <a
+            href={`/${locale}`}
+            className="flex items-center gap-1.5 font-medium text-brand"
+          >
             <ArrowLeft size={18} />
             {t("newStack")}
           </a>
           <div className="flex items-center gap-3">
-          <AuthButton />
-          {id && (
-            <button
-              onClick={() => {
-                navigator.clipboard.writeText(location.href);
-                setCopied(true);
-              }}
-              className="flex items-center gap-1.5 rounded-full border border-line bg-surface px-3 py-2 text-sm font-semibold"
-            >
-              <LinkIcon size={15} />
-              {copied ? t("copied") : t("share")}
-            </button>
-          )}
+            <AuthButton />
+            {id && (
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(location.href);
+                  setCopied(true);
+                }}
+                className="flex items-center gap-1.5 rounded-full border border-line bg-surface px-3 py-2 text-sm font-semibold"
+              >
+                <LinkIcon size={15} />
+                {copied ? t("copied") : t("share")}
+              </button>
+            )}
           </div>
         </div>
 
         <header className="space-y-1">
-          <h1 className="font-serif text-[34px] font-semibold leading-tight">{t("title", { n: items.length })}</h1>
-          <p className="text-sm text-muted">{t("from", { n: result.pages.length })}</p>
+          <h1 className="font-serif text-[34px] font-semibold leading-tight">
+            {t("title", { n: items.length })}
+          </h1>
+          <p className="text-sm text-muted">
+            {t("from", { n: result.pages.length })}
+          </p>
         </header>
 
         <div className="grid grid-cols-3 gap-2">
           {stats.map(([v, l, c]) => (
-            <div key={l} className="rounded-2xl border border-line bg-surface px-3.5 py-3">
-              <div className={`font-serif text-2xl font-semibold ${c}`}>{v}</div>
+            <div
+              key={l}
+              className="rounded-2xl border border-line bg-surface px-3.5 py-3"
+            >
+              <div className={`font-serif text-2xl font-semibold ${c}`}>
+                {v}
+              </div>
               <div className="text-xs text-muted">{l}</div>
             </div>
           ))}
@@ -88,9 +118,11 @@ export default function ResultsView({ id, initial }: { id: string | null; initia
                 <span className={`size-2 rounded-full ${g.dot}`} />
                 {t(g.label)}
               </div>
-              {list.map((i) => (
-                <ItemCard key={i.id} item={i} onReply={() => setReply(i)} />
-              ))}
+              <div className="grid gap-2.5 md:grid-cols-2">
+                {list.map((i) => (
+                  <ItemCard key={i.id} item={i} onReply={() => setReply(i)} />
+                ))}
+              </div>
             </section>
           );
         })}

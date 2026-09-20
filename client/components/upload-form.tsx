@@ -2,11 +2,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
-import { Camera, FileCheck, Loader2, Plus, Sparkles } from "lucide-react";
+import { Camera, Loader2, Plus, Sparkles } from "lucide-react";
 import { decode, type Lang } from "@/lib/api";
 import { downscale } from "@/lib/image";
 import { saveToHistory } from "@/lib/firebase";
-import AuthButton from "./auth-button";
+import SiteHeader from "./site-header";
 
 const LANGS: { code: Lang; label: string }[] = [
   { code: "es", label: "Español" },
@@ -17,7 +17,6 @@ const MAX = 8;
 
 export default function UploadForm() {
   const t = useTranslations("upload");
-  const tn = useTranslations("nav");
   const locale = useLocale();
   const router = useRouter();
   const [files, setFiles] = useState<File[]>([]);
@@ -27,10 +26,16 @@ export default function UploadForm() {
   const lang = LANGS.some((l) => l.code === locale) ? (locale as Lang) : null;
 
   const previews = useMemo(
-    () => files.map((f) => (f.type.startsWith("image/") ? URL.createObjectURL(f) : "")),
+    () =>
+      files.map((f) =>
+        f.type.startsWith("image/") ? URL.createObjectURL(f) : "",
+      ),
     [files],
   );
-  useEffect(() => () => previews.forEach((u) => u && URL.revokeObjectURL(u)), [previews]);
+  useEffect(
+    () => () => previews.forEach((u) => u && URL.revokeObjectURL(u)),
+    [previews],
+  );
 
   function pick(list: FileList | null) {
     if (!list) return;
@@ -59,116 +64,131 @@ export default function UploadForm() {
 
   const n = files.length;
   return (
-    <main className="mx-auto max-w-md space-y-7 px-5 pb-8 pt-4">
-      <header className="space-y-2">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 text-sm font-semibold text-brand">
-            <FileCheck size={20} /> Paper Bridge
-          </div>
-          <div className="flex items-center gap-4 text-sm">
-            <a href={`/${locale}/about`} className="text-muted">{tn("about")}</a>
-            <AuthButton />
-          </div>
-        </div>
-        <h1 className="font-serif text-[34px] font-semibold leading-tight">
-          {busy ? t("decoding", { n }) : t("title")}
-        </h1>
-        <p className="text-muted">{busy ? t("decodingHint") : t("subtitle")}</p>
-      </header>
+    <>
+      <SiteHeader locale={locale} />
+      {/* dev-note: one column on phone; on desktop the headline+language sit left, the dropzone right */}
+      <main className="mx-auto max-w-md space-y-7 px-5 pb-8 pt-6 md:grid md:max-w-5xl md:grid-cols-2 md:items-start md:gap-x-16 md:space-y-0 md:pt-14">
+        <div className="space-y-7 md:sticky md:top-8">
+          <header className="space-y-2">
+            <h1 className="font-serif text-[34px] font-semibold leading-tight md:text-5xl">
+              {busy ? t("decoding", { n }) : t("title")}
+            </h1>
+            <p className="text-muted">
+              {busy ? t("decodingHint") : t("subtitle")}
+            </p>
+          </header>
 
-      {!busy && (
-        <section className="space-y-2">
-          <p className="text-xs font-semibold tracking-wide text-muted">{t("language")}</p>
-          <div className="flex gap-2">
-            {LANGS.map((l) => (
-              <a
-                key={l.code}
-                href={`/${l.code}`}
-                className={`flex-1 rounded-full border py-3 text-center text-[15px] ${
-                  l.code === lang
-                    ? "border-brand bg-brand font-semibold text-white"
-                    : "border-line bg-surface"
-                }`}
-              >
-                {l.label}
-              </a>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {!busy && (
-        <label className="flex cursor-pointer flex-col items-center gap-3 rounded-[20px] border-2 border-brand bg-surface px-5 py-8">
-          <span className="grid size-16 place-items-center rounded-full bg-brand-soft text-brand">
-            <Camera size={30} />
-          </span>
-          <span className="text-lg font-semibold">{t("dropTitle")}</span>
-          <span className="text-sm text-muted">{t("dropHint")}</span>
-          <input
-            type="file"
-            accept="image/*,application/pdf"
-            capture="environment"
-            multiple
-            hidden
-            onChange={(e) => pick(e.target.files)}
-          />
-        </label>
-      )}
-
-      {n > 0 && (
-        <section className="space-y-2">
-          <div className="flex justify-between text-xs font-semibold tracking-wide text-muted">
-            <span>{t("selected", { n })}</span>
-            {!busy && (
-              <button className="text-brand" onClick={() => setFiles([])}>
-                {t("clear")}
-              </button>
-            )}
-          </div>
-          <div className="grid grid-cols-4 gap-2">
-            {files.map((f, i) => (
-              <div
-                key={i}
-                className={`relative h-[110px] overflow-hidden rounded-xl border border-line bg-[#E9E4DA] ${busy ? "animate-pulse" : ""}`}
-              >
-                {previews[i] && (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={previews[i]} alt="" className="size-full object-cover" />
-                )}
-                <span className="absolute bottom-2 left-2 rounded-full bg-black/80 px-2 py-0.5 text-[11px] font-semibold text-white">
-                  {i + 1}
-                </span>
+          {!busy && (
+            <section className="space-y-2">
+              <p className="text-xs font-semibold tracking-wide text-muted">
+                {t("language")}
+              </p>
+              <div className="flex gap-2">
+                {LANGS.map((l) => (
+                  <a
+                    key={l.code}
+                    href={`/${l.code}`}
+                    className={`flex-1 rounded-full border py-3 text-center text-[15px] ${
+                      l.code === lang
+                        ? "border-brand bg-brand font-semibold text-white"
+                        : "border-line bg-surface"
+                    }`}
+                  >
+                    {l.label}
+                  </a>
+                ))}
               </div>
-            ))}
-            {!busy && n < MAX && (
-              <label className="grid h-[110px] cursor-pointer place-items-center rounded-xl border border-line text-muted">
-                <Plus size={22} />
-                <input
-                  type="file"
-                  accept="image/*,application/pdf"
-                  multiple
-                  hidden
-                  onChange={(e) => pick(e.target.files)}
-                />
-              </label>
+            </section>
+          )}
+        </div>
+
+        <div className="space-y-7">
+          {!busy && (
+            <label className="flex cursor-pointer flex-col items-center gap-3 rounded-[20px] border-2 border-brand bg-surface px-5 py-8">
+              <span className="grid size-16 place-items-center rounded-full bg-brand-soft text-brand">
+                <Camera size={30} />
+              </span>
+              <span className="text-lg font-semibold">{t("dropTitle")}</span>
+              <span className="text-sm text-muted">{t("dropHint")}</span>
+              <input
+                type="file"
+                accept="image/*,application/pdf"
+                capture="environment"
+                multiple
+                hidden
+                onChange={(e) => pick(e.target.files)}
+              />
+            </label>
+          )}
+
+          {n > 0 && (
+            <section className="space-y-2">
+              <div className="flex justify-between text-xs font-semibold tracking-wide text-muted">
+                <span>{t("selected", { n })}</span>
+                {!busy && (
+                  <button className="text-brand" onClick={() => setFiles([])}>
+                    {t("clear")}
+                  </button>
+                )}
+              </div>
+              <div className="grid grid-cols-4 gap-2">
+                {files.map((f, i) => (
+                  <div
+                    key={i}
+                    className={`relative h-[110px] overflow-hidden rounded-xl border border-line bg-[#E9E4DA] ${busy ? "animate-pulse" : ""}`}
+                  >
+                    {previews[i] && (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={previews[i]}
+                        alt=""
+                        className="size-full object-cover"
+                      />
+                    )}
+                    <span className="absolute bottom-2 left-2 rounded-full bg-black/80 px-2 py-0.5 text-[11px] font-semibold text-white">
+                      {i + 1}
+                    </span>
+                  </div>
+                ))}
+                {!busy && n < MAX && (
+                  <label className="grid h-[110px] cursor-pointer place-items-center rounded-xl border border-line text-muted">
+                    <Plus size={22} />
+                    <input
+                      type="file"
+                      accept="image/*,application/pdf"
+                      multiple
+                      hidden
+                      onChange={(e) => pick(e.target.files)}
+                    />
+                  </label>
+                )}
+              </div>
+            </section>
+          )}
+
+          {err && <p className="text-sm text-danger">{err}</p>}
+          {!lang && n > 0 && (
+            <p className="text-sm text-warn">{t("chooseLanguage")}</p>
+          )}
+
+          <button
+            disabled={busy || n === 0 || !lang}
+            onClick={go}
+            className="flex w-full items-center justify-center gap-2 rounded-2xl bg-brand py-[18px] text-[17px] font-semibold text-white disabled:bg-line disabled:text-muted"
+          >
+            {/* dev-note: text in a span so Chrome auto-translate's <font> wrapping can't break React's sibling swap */}
+            {busy ? (
+              <Loader2 className="animate-spin" size={20} />
+            ) : (
+              <Sparkles size={20} />
             )}
-          </div>
-        </section>
-      )}
-
-      {err && <p className="text-sm text-danger">{err}</p>}
-      {!lang && n > 0 && <p className="text-sm text-warn">{t("chooseLanguage")}</p>}
-
-      <button
-        disabled={busy || n === 0 || !lang}
-        onClick={go}
-        className="flex w-full items-center justify-center gap-2 rounded-2xl bg-brand py-[18px] text-[17px] font-semibold text-white disabled:bg-line disabled:text-muted"
-      >
-        {/* dev-note: text in a span so Chrome auto-translate's <font> wrapping can't break React's sibling swap */}
-        {busy ? <Loader2 className="animate-spin" size={20} /> : <Sparkles size={20} />}
-        <span>{busy ? t("decoding", { n }) : t("decode", { n: Math.max(n, 1) })}</span>
-      </button>
-      <p className="text-center text-xs text-muted">{t("privacy")}</p>
-    </main>
+            <span>
+              {busy ? t("decoding", { n }) : t("decode", { n: Math.max(n, 1) })}
+            </span>
+          </button>
+          <p className="text-center text-xs text-muted">{t("privacy")}</p>
+        </div>
+      </main>
+    </>
   );
 }
