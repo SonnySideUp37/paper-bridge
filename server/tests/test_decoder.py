@@ -8,9 +8,11 @@ from app.decoder import PageOut, RawItem, MergeOut
 
 class FakeClient:
     """Returns canned PageOut for image calls, MergeOut for the merge call."""
-    def __init__(self, page_outs, merge_out=None, fail_pages=()):
+    def __init__(self, page_outs, merge_out=None, fail_pages=(), merge_fail_times=0):
         self.page_outs, self.merge_out, self.fail_pages = page_outs, merge_out, set(fail_pages)
+        self.merge_fail_times = merge_fail_times
         self.calls = 0
+        self.merge_calls = 0
         self.aio = SimpleNamespace(models=SimpleNamespace(generate_content=self._gen))
 
     async def _gen(self, model, contents, config):
@@ -20,6 +22,9 @@ class FakeClient:
             if idx in self.fail_pages:
                 raise RuntimeError("gemini down")
             return SimpleNamespace(parsed=self.page_outs[idx])
+        self.merge_calls += 1
+        if self.merge_calls <= self.merge_fail_times:
+            raise RuntimeError("gemini down")
         return SimpleNamespace(parsed=self.merge_out)
 
 
@@ -61,3 +66,19 @@ async def test_all_pages_failed_raises():
     fake = FakeClient([None], fail_pages=[0])
     with pytest.raises(decoder.AllPagesFailed):
         await decoder.decode([(b"1", "image/jpeg")], "vi", TODAY, client=fake)
+
+
+async def test_merge_retries_once_then_succeeds():
+    merged = MergeOut(items=[ITEM], reply_drafts=[])
+    fake = FakeClient([PageOut(summary="a", items=[ITEM]), PageOut(summary="b", items=[ITEM])],
+                      merged, merge_fail_times=1)
+    r = await decoder.decode([(b"1", "image/jpeg"), (b"2", "image/jpeg")], "vi", TODAY, client=fake)
+    assert fake.merge_calls == 2
+    assert len(r.items) == 1
+
+
+async def test_merge_fails_twice_raises():
+    fake = FakeClient([PageOut(summary="a", items=[ITEM]), PageOut(summary="b", items=[ITEM])],
+                      merge_fail_times=2)
+    with pytest.raises(RuntimeError):
+        await decoder.decode([(b"1", "image/jpeg"), (b"2", "image/jpeg")], "vi", TODAY, client=fake)

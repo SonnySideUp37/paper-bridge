@@ -83,8 +83,13 @@ async def _merge(client, model, items: list[RawItem], n: int, lang: Lang) -> Mer
     prompt = MERGE_PROMPT.format(n=n, lang=LANG_NAME[lang],
                                  items="\n".join(i.model_dump_json() for i in items))
     cfg = types.GenerateContentConfig(response_mime_type="application/json", response_schema=MergeOut)
-    r = await client.aio.models.generate_content(model=model, contents=[prompt], config=cfg)
-    return r.parsed
+    for attempt in range(2):
+        try:
+            r = await client.aio.models.generate_content(model=model, contents=[prompt], config=cfg)
+            return r.parsed
+        except Exception:
+            if attempt == 1:
+                raise
 
 
 def _finalize(raw: list[RawItem], today: date) -> list[ActionItem]:
