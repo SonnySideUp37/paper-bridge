@@ -3,6 +3,7 @@ import { useSyncExternalStore } from "react";
 import { onAuthStateChanged, signOut, type User } from "firebase/auth";
 import { ChevronDown, History, LogOut } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
+import { useRouter } from "next/navigation";
 import { auth, firebaseReady } from "@/lib/firebase";
 
 // dev-note: undefined = not yet known (SSR + first paint), null = signed out
@@ -25,6 +26,7 @@ export default function AuthButton() {
   const t = useTranslations("auth");
   const locale = useLocale();
   const user = useUser();
+  const router = useRouter();
   if (!firebaseReady || user === undefined) return null;
   if (!user) {
     return (
@@ -67,7 +69,7 @@ export default function AuthButton() {
           <History size={16} className="text-muted" /> {t("history")}
         </a>
         <button
-          onClick={() => signOut(auth())}
+          onClick={() => signOut(auth()).then(() => router.push(`/${locale}`))}
           className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-danger hover:bg-bg"
         >
           <LogOut size={16} /> {t("signOut")}
