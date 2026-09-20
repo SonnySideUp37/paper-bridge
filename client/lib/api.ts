@@ -1,4 +1,4 @@
-export type Lang = "es" | "vi" | "zh";
+export type Lang = "en" | "es" | "vi" | "zh";
 export type Urgency = "overdue" | "this_week" | "later" | "none";
 export interface ActionItem {
   id: string;

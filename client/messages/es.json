@@ -12,8 +12,7 @@
     "decodingHint": "Suele tardar 20–40 segundos. No cierres esta página.",
     "privacy": "Las fotos no se guardan. Los resultados se conservan 30 días.",
     "errorAllFailed": "No se pudo leer ninguna página. Prueba con fotos más claras.",
-    "errorTooMany": "Máximo 8 páginas.",
-    "chooseLanguage": "Primero elige tu idioma arriba."
+    "errorTooMany": "Máximo 8 páginas."
   },
   "results": {
     "title": "{n} cosas por hacer",

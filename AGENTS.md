@@ -13,7 +13,7 @@ Paper Bridge: photograph school paperwork → action items in the parent's langu
 - **Every view is a pure function of `DecodeResult`.** Gemini is the only non-deterministic step and lives only in `server/app/decoder.py`. `urgency` is computed in Python, never asked from the model.
 - **Never persist images.** Only the result JSON goes to KV (30-day TTL).
 - **Auth is optional and frontend-only.** Firebase Auth (Google) + Firestore `users/{uid}/results`. FastAPI never sees a user; decoding never requires sign-in.
-- **Languages are exactly `es`, `vi`, `zh`.** Adding one means adding a `messages/<code>.json` too.
+- **Languages are exactly `en`, `es`, `vi`, `zh`.** (`en` = English-speaking parent decoding a non-English or dense English stack.) Adding one means adding a `messages/<code>.json` too.
 
 ## Code rules
 
