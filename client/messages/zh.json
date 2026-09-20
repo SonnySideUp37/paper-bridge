@@ -13,7 +13,8 @@
     "privacy": "照片不会被保存。结果保留 30 天。",
     "errorAllFailed": "无法读取任何页面。请尝试更清晰的照片。",
     "errorTooMany": "最多 8 页。",
-    "chooseLanguage": "请先在上方选择您的语言。"
+    "stepPage": "第 {n} 页",
+    "stepMerge": "合并并翻译"
   },
   "results": {
     "title": "{n} 件待办事项",

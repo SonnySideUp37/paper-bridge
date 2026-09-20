@@ -13,7 +13,8 @@
     "privacy": "Ảnh không được lưu lại. Chỉ giữ kết quả trong 30 ngày.",
     "errorAllFailed": "Không đọc được trang nào. Hãy thử ảnh rõ hơn.",
     "errorTooMany": "Tối đa 8 trang.",
-    "chooseLanguage": "Hãy chọn ngôn ngữ của bạn ở trên trước."
+    "stepPage": "Trang {n}",
+    "stepMerge": "Gộp & dịch"
   },
   "results": {
     "title": "{n} việc cần làm",

@@ -7,8 +7,10 @@ import { decode, type Lang } from "@/lib/api";
 import { downscale } from "@/lib/image";
 import { saveToHistory } from "@/lib/firebase";
 import SiteHeader from "./site-header";
+import DecodeProgress from "./decode-progress";
 
 const LANGS: { code: Lang; label: string }[] = [
+  { code: "en", label: "English" },
   { code: "es", label: "Español" },
   { code: "vi", label: "Tiếng Việt" },
   { code: "zh", label: "中文" },
@@ -22,8 +24,7 @@ export default function UploadForm() {
   const [files, setFiles] = useState<File[]>([]);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
-  // dev-note: /en is the landing; parent must pick a target language before decoding
-  const lang = LANGS.some((l) => l.code === locale) ? (locale as Lang) : null;
+  const lang = locale as Lang;
 
   const previews = useMemo(
     () =>
@@ -49,7 +50,7 @@ export default function UploadForm() {
     setErr("");
     try {
       const prepped = await Promise.all(files.map((f) => downscale(f)));
-      const { id, result } = await decode(prepped, lang!);
+      const { id, result } = await decode(prepped, lang);
       if (id) saveToHistory(result).catch(() => {});
       if (id) router.push(`/${locale}/r/${id}`);
       else {
@@ -82,7 +83,7 @@ export default function UploadForm() {
               <p className="text-xs font-semibold tracking-wide text-muted">
                 {t("language")}
               </p>
-              <div className="flex gap-2 md:justify-center">
+              <div className="grid grid-cols-2 gap-2 md:flex md:justify-center">
                 {LANGS.map((l) => (
                   <a
                     key={l.code}
@@ -102,6 +103,8 @@ export default function UploadForm() {
         </div>
 
         <div className="space-y-7">
+          {busy && <DecodeProgress n={n} />}
+
           {!busy && (
             <label className="flex cursor-pointer flex-col items-center gap-3 rounded-[20px] border-2 border-brand bg-surface px-5 py-8">
               <span className="grid size-16 place-items-center rounded-full bg-brand-soft text-brand">
@@ -166,12 +169,9 @@ export default function UploadForm() {
           )}
 
           {err && <p className="text-sm text-danger">{err}</p>}
-          {!lang && n > 0 && (
-            <p className="text-sm text-warn">{t("chooseLanguage")}</p>
-          )}
 
           <button
-            disabled={busy || n === 0 || !lang}
+            disabled={busy || n === 0}
             onClick={go}
             className="flex w-full items-center justify-center gap-2 rounded-2xl bg-brand py-[18px] text-[17px] font-semibold text-white disabled:bg-line disabled:text-muted"
           >

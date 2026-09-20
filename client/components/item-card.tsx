@@ -55,7 +55,7 @@ export default function ItemCard({ item, onReply }: { item: ActionItem; onReply:
         )}
         {item.amount_usd != null && (
           <Chip tone="warn" icon={<DollarSign size={13} />}>
-            ${item.amount_usd}
+            {item.amount_usd}
           </Chip>
         )}
         {item.location && (

@@ -13,7 +13,8 @@
     "privacy": "Photos are not stored. Results are kept for 30 days.",
     "errorAllFailed": "Could not read any page. Try clearer photos.",
     "errorTooMany": "Maximum 8 pages.",
-    "chooseLanguage": "Choose your language above first."
+    "stepPage": "Page {n}",
+    "stepMerge": "Merge & translate"
   },
   "results": {
     "title": "{n} things to do",
