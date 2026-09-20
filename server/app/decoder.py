@@ -103,7 +103,7 @@ def _finalize(raw: list[RawItem], today: date) -> list[ActionItem]:
 
 async def decode(pages: list[tuple[bytes, str]], target_language: Lang, today: date, client=None) -> DecodeResult:
     client = client or _client()
-    model = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
+    model = os.environ.get("GEMINI_MODEL", "gemini-3.6-flash")
     outs = await asyncio.gather(*[_page(client, model, b, m, i, target_language, today)
                                   for i, (b, m) in enumerate(pages)])
     if all(o is None for o in outs):
