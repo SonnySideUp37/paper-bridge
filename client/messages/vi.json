@@ -52,7 +52,8 @@
     "optional": "Không bắt buộc đăng nhập. Bạn có thể giải mã mà không cần tài khoản.",
     "empty": "Chưa có gì. Giải mã một xấp giấy và nó sẽ hiện ở đây.",
     "items": "{n} mục",
-    "newStack": "Giải mã xấp giấy mới"
+    "newStack": "Giải mã xấp giấy mới",
+    "error": "Đăng nhập không thành công."
   },
   "nav": {
     "about": "Giới thiệu"

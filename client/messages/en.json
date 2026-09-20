@@ -52,7 +52,8 @@
     "optional": "Sign-in is optional. You can decode without an account.",
     "empty": "No stacks yet. Decode one and it will show up here.",
     "items": "{n} items",
-    "newStack": "Decode a new stack"
+    "newStack": "Decode a new stack",
+    "error": "Sign-in failed."
   },
   "nav": {
     "about": "About"

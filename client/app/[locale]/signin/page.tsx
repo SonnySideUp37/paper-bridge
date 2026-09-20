@@ -1,4 +1,5 @@
 "use client";
+import { useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import SiteHeader from "@/components/site-header";
@@ -8,6 +9,7 @@ export default function SignIn() {
   const t = useTranslations("auth");
   const locale = useLocale();
   const router = useRouter();
+  const [err, setErr] = useState("");
   return (
     <>
       <SiteHeader locale={locale} />
@@ -21,8 +23,15 @@ export default function SignIn() {
         <button
           disabled={!firebaseReady}
           onClick={async () => {
-            await googleSignIn();
-            router.push(`/${locale}/history`);
+            try {
+              await googleSignIn();
+              router.push(`/${locale}/history`);
+            } catch (e) {
+              // dev-note: popup closed / provider not enabled / domain not authorized all land here
+              setErr(
+                `${t("error")} (${(e as { code?: string }).code ?? "unknown"})`,
+              );
+            }
           }}
           className="flex w-full items-center justify-center gap-2 rounded-2xl border border-line bg-surface py-4 font-semibold disabled:opacity-50"
         >
@@ -46,6 +55,7 @@ export default function SignIn() {
           </svg>
           <span>{t("google")}</span>
         </button>
+        {err && <p className="text-center text-sm text-danger">{err}</p>}
         <p className="text-center text-sm text-muted">{t("optional")}</p>
       </main>
     </>
