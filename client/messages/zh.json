@@ -12,7 +12,8 @@
     "decodingHint": "通常需要 20–40 秒。请不要关闭此页面。",
     "privacy": "照片不会被保存。结果保留 30 天。",
     "errorAllFailed": "无法读取任何页面。请尝试更清晰的照片。",
-    "errorTooMany": "最多 8 页。"
+    "errorTooMany": "最多 8 页。",
+    "chooseLanguage": "请先在上方选择您的语言。"
   },
   "results": {
     "title": "{n} 件待办事项",
@@ -51,5 +52,8 @@
     "empty": "还没有内容。解读一叠文件后会显示在这里。",
     "items": "{n} 项",
     "newStack": "解读新的一叠"
+  },
+  "nav": {
+    "about": "关于"
   }
 }

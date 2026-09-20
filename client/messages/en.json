@@ -12,7 +12,8 @@
     "decodingHint": "Usually 20–40 seconds. Keep this page open.",
     "privacy": "Photos are not stored. Results are kept for 30 days.",
     "errorAllFailed": "Could not read any page. Try clearer photos.",
-    "errorTooMany": "Maximum 8 pages."
+    "errorTooMany": "Maximum 8 pages.",
+    "chooseLanguage": "Choose your language above first."
   },
   "results": {
     "title": "{n} things to do",
@@ -51,5 +52,8 @@
     "empty": "No stacks yet. Decode one and it will show up here.",
     "items": "{n} items",
     "newStack": "Decode a new stack"
+  },
+  "nav": {
+    "about": "About"
   }
 }
