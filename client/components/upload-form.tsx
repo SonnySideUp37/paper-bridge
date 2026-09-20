@@ -7,6 +7,7 @@ import { decode, type Lang } from "@/lib/api";
 import { downscale } from "@/lib/image";
 import { saveToHistory } from "@/lib/firebase";
 import SiteHeader from "./site-header";
+import DecodeProgress from "./decode-progress";
 
 const LANGS: { code: Lang; label: string }[] = [
   { code: "en", label: "English" },
@@ -102,6 +103,8 @@ export default function UploadForm() {
         </div>
 
         <div className="space-y-7">
+          {busy && <DecodeProgress n={n} />}
+
           {!busy && (
             <label className="flex cursor-pointer flex-col items-center gap-3 rounded-[20px] border-2 border-brand bg-surface px-5 py-8">
               <span className="grid size-16 place-items-center rounded-full bg-brand-soft text-brand">

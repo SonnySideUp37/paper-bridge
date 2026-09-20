@@ -12,7 +12,9 @@
     "decodingHint": "Usually 20–40 seconds. Keep this page open.",
     "privacy": "Photos are not stored. Results are kept for 30 days.",
     "errorAllFailed": "Could not read any page. Try clearer photos.",
-    "errorTooMany": "Maximum 8 pages."
+    "errorTooMany": "Maximum 8 pages.",
+    "stepPage": "Page {n}",
+    "stepMerge": "Merge & translate"
   },
   "results": {
     "title": "{n} things to do",
