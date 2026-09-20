@@ -72,4 +72,8 @@ Design doc: [`docs/superpowers/specs/2026-09-19-paper-bridge-design.md`](docs/su
 
 ## Team
 
-Built in ~36 hours at SASEhack 2026.
+[@jacklvd](https://github.com/jacklvd) · [@SonnySideUp37](https://github.com/SonnySideUp37) — built in ~36 hours at SASEhack 2026.
+
+## License
+
+[MIT](LICENSE)
