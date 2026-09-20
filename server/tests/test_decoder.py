@@ -82,3 +82,15 @@ async def test_merge_fails_twice_raises():
                       merge_fail_times=2)
     with pytest.raises(RuntimeError):
         await decoder.decode([(b"1", "image/jpeg"), (b"2", "image/jpeg")], "vi", TODAY, client=fake)
+
+
+
+async def test_reply_draft_follows_item_after_sort():
+    # dev-note: drafts index into the model's list; sorting by date must not detach them
+    later = RawItem(**{**ITEM.model_dump(), "title_en": "Later", "due_date": "2026-12-01", "needs_reply": True})
+    sooner = RawItem(**{**ITEM.model_dump(), "title_en": "Sooner", "due_date": "2026-10-01"})
+    merged = MergeOut(items=[later, sooner], reply_drafts=[decoder.RawReply(item_index=0, subject="s", body_en="x")])
+    fake = FakeClient([PageOut(summary="a", items=[later, sooner])], merged)
+    r = await decoder.decode([(b"1", "image/jpeg")], "en", TODAY, client=fake)
+    assert [i.title_en for i in r.items] == ["Sooner", "Later"]
+    assert r.reply_drafts[0].item_id == next(i for i in r.items if i.title_en == "Later").id

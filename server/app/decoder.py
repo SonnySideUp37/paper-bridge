@@ -102,8 +102,7 @@ def _finalize(raw: list[RawItem], today: date) -> list[ActionItem]:
             needs_signature=r.needs_signature, needs_reply=r.needs_reply,
             source_page=r.source_page, source_quote=r.source_quote,
             urgency=compute_urgency(due, today)))
-    out.sort(key=lambda i: (i.due_date is None, i.due_date or date.max))
-    return out
+    return out  # raw order — reply_drafts index into this; decode() sorts after mapping
 
 
 async def decode(pages: list[tuple[bytes, str]], target_language: Lang, today: date, client=None) -> DecodeResult:
@@ -124,6 +123,7 @@ async def decode(pages: list[tuple[bytes, str]], target_language: Lang, today: d
     items = _finalize(raw, today)
     reply_drafts = [ReplyDraft(item_id=items[d.item_index].id, subject=d.subject, body_en=d.body_en)
                     for d in drafts if 0 <= d.item_index < len(items)]
+    items.sort(key=lambda i: (i.due_date is None, i.due_date or date.max))
     return DecodeResult(id=new_id(), target_language=target_language,
                         created_at=datetime.now(timezone.utc), pages=summaries,
                         items=items, reply_drafts=reply_drafts)
