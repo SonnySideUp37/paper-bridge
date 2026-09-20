@@ -7,7 +7,7 @@ from pydantic import BaseModel
 from app.models import (ActionItem, DecodeResult, ItemType, Lang, PageSummary,
                         ReplyDraft, compute_urgency, new_id)
 
-LANG_NAME = {"es": "Spanish", "vi": "Vietnamese", "zh": "Simplified Chinese"}
+LANG_NAME = {"en": "English", "es": "Spanish", "vi": "Vietnamese", "zh": "Simplified Chinese"}
 
 
 class RawItem(BaseModel):

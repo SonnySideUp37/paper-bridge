@@ -4,7 +4,7 @@ from typing import Literal
 
 from pydantic import BaseModel
 
-Lang = Literal["es", "vi", "zh"]
+Lang = Literal["en", "es", "vi", "zh"]
 Urgency = Literal["overdue", "this_week", "later", "none"]
 ItemType = Literal["deadline", "payment", "signature", "event", "info"]
 
