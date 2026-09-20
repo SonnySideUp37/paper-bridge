@@ -17,12 +17,14 @@ const MAX = 8;
 
 export default function UploadForm() {
   const t = useTranslations("upload");
+  const tn = useTranslations("nav");
   const locale = useLocale();
   const router = useRouter();
   const [files, setFiles] = useState<File[]>([]);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
-  const lang = (LANGS.some((l) => l.code === locale) ? locale : "vi") as Lang;
+  // dev-note: /en is the landing; parent must pick a target language before decoding
+  const lang = LANGS.some((l) => l.code === locale) ? (locale as Lang) : null;
 
   const previews = useMemo(
     () => files.map((f) => (f.type.startsWith("image/") ? URL.createObjectURL(f) : "")),
@@ -42,7 +44,7 @@ export default function UploadForm() {
     setErr("");
     try {
       const prepped = await Promise.all(files.map((f) => downscale(f)));
-      const { id, result } = await decode(prepped, lang);
+      const { id, result } = await decode(prepped, lang!);
       if (id) saveToHistory(result).catch(() => {});
       if (id) router.push(`/${locale}/r/${id}`);
       else {
@@ -63,7 +65,10 @@ export default function UploadForm() {
           <div className="flex items-center gap-2 text-sm font-semibold text-brand">
             <FileCheck size={20} /> Paper Bridge
           </div>
-          <AuthButton />
+          <div className="flex items-center gap-4 text-sm">
+            <a href={`/${locale}/about`} className="text-muted">{tn("about")}</a>
+            <AuthButton />
+          </div>
         </div>
         <h1 className="font-serif text-[34px] font-semibold leading-tight">
           {busy ? t("decoding", { n }) : t("title")}
@@ -152,14 +157,16 @@ export default function UploadForm() {
       )}
 
       {err && <p className="text-sm text-danger">{err}</p>}
+      {!lang && n > 0 && <p className="text-sm text-warn">{t("chooseLanguage")}</p>}
 
       <button
-        disabled={busy || n === 0}
+        disabled={busy || n === 0 || !lang}
         onClick={go}
         className="flex w-full items-center justify-center gap-2 rounded-2xl bg-brand py-[18px] text-[17px] font-semibold text-white disabled:bg-line disabled:text-muted"
       >
+        {/* dev-note: text in a span so Chrome auto-translate's <font> wrapping can't break React's sibling swap */}
         {busy ? <Loader2 className="animate-spin" size={20} /> : <Sparkles size={20} />}
-        {busy ? t("decoding", { n }) : t("decode", { n: Math.max(n, 1) })}
+        <span>{busy ? t("decoding", { n }) : t("decode", { n: Math.max(n, 1) })}</span>
       </button>
       <p className="text-center text-xs text-muted">{t("privacy")}</p>
     </main>
