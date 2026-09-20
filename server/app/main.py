@@ -12,7 +12,7 @@ log = logging.getLogger("paperbridge")
 MAX_FILES, MAX_BYTES = 8, 10 * 1024 * 1024
 
 app = FastAPI(title="Paper Bridge API")
-app.add_middleware(CORSMiddleware, allow_origins=[os.environ.get("ALLOWED_ORIGIN", "http://localhost:3000")],
+app.add_middleware(CORSMiddleware, allow_origins=[os.environ.get("ALLOWED_ORIGIN", "http://localhost:3000").rstrip("/"), "http://localhost:3000"],
                    allow_methods=["*"], allow_headers=["*"])
 
 

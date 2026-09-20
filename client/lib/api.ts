@@ -31,7 +31,11 @@ export async function decode(files: File[], lang: Lang): Promise<{ id: string | 
   files.forEach((f) => fd.append("files", f));
   fd.append("target_language", lang);
   const r = await fetch(`${API}/decode`, { method: "POST", body: fd });
-  if (!r.ok) throw new Error((await r.json()).detail ?? r.statusText);
+  if (!r.ok) {
+    // dev-note: 4xx from our routes is a string; 422 validation and proxy errors aren't
+    const d = await r.json().then((j) => j.detail).catch(() => null);
+    throw new Error(typeof d === "string" ? d : r.statusText);
+  }
   return r.json();
 }
 

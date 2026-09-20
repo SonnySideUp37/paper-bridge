@@ -12,7 +12,8 @@
     "decodingHint": "Thường mất 20–40 giây. Đừng đóng trang này.",
     "privacy": "Ảnh không được lưu lại. Chỉ giữ kết quả trong 30 ngày.",
     "errorAllFailed": "Không đọc được trang nào. Hãy thử ảnh rõ hơn.",
-    "errorTooMany": "Tối đa 8 trang."
+    "errorTooMany": "Tối đa 8 trang.",
+    "chooseLanguage": "Hãy chọn ngôn ngữ của bạn ở trên trước."
   },
   "results": {
     "title": "{n} việc cần làm",
@@ -51,5 +52,8 @@
     "empty": "Chưa có gì. Giải mã một xấp giấy và nó sẽ hiện ở đây.",
     "items": "{n} mục",
     "newStack": "Giải mã xấp giấy mới"
+  },
+  "nav": {
+    "about": "Giới thiệu"
   }
 }

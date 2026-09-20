@@ -19,7 +19,7 @@ export default async function Layout({
   const { locale } = await params;
   const messages = await getMessages();
   return (
-    <html lang={locale} className={`${inter.variable} ${fraunces.variable}`}>
+    <html lang={locale} translate="no" className={`${inter.variable} ${fraunces.variable}`}>
       <body className="bg-bg text-ink font-sans antialiased">
         <NextIntlClientProvider messages={messages}>{children}</NextIntlClientProvider>
       </body>

@@ -1,8 +1,7 @@
-import { notFound } from "next/navigation";
 import ResultsView from "@/components/results-view";
 import type { DecodeResult } from "@/lib/api";
 
-// dev-note: static fixture so the results UI can be built without the backend; 404s in production
+// dev-note: static fixture; doubles as the public sample linked from /about
 const FIXTURE: DecodeResult = {
   id: "devfixture",
   target_language: "vi",
@@ -24,6 +23,5 @@ const FIXTURE: DecodeResult = {
 };
 
 export default function DevPage() {
-  if (process.env.NODE_ENV === "production") notFound();
   return <ResultsView id="devfixture" initial={FIXTURE} />;
 }
